@@ -11,15 +11,27 @@ interface RightPanelProps {
     files: FileSystemNode;
     handleRunCode: (setActiveRightPanelTab: (tab: string) => void) => void;
     handleSubmit: (setActiveRightPanelTab: (tab: string) => void) => void;
-    addNode: (name: string, type: 'file' | 'folder') => void;
-    deleteNode: (path: string) => void;
+    addFile: (name: string, path: string) => boolean;
+    addFolder: (name: string, path: string) => boolean;
+    deleteNode: (path: string) => boolean;
     currentWorkingDirectory: string;
     setCurrentWorkingDirectory: (path: string) => void;
     onOpenFile: (path: string) => void;
 }
 
 export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
-    const { testResults, files, handleRunCode, handleSubmit, addNode, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile } = props;
+    const { 
+        testResults, 
+        files, 
+        handleRunCode, 
+        handleSubmit, 
+        addFile, 
+        addFolder,
+        deleteNode, 
+        currentWorkingDirectory, 
+        setCurrentWorkingDirectory, 
+        onOpenFile 
+    } = props;
     const [activeTab, setActiveTab] = useState('output');
 
     useImperativeHandle(ref, () => ({
@@ -56,7 +68,8 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
                         <TerminalView 
                             files={files}
                             onRunTests={() => handleSubmit(setActiveTab)}
-                            addNode={addNode}
+                            addFile={addFile}
+                            addFolder={addFolder}
                             deleteNode={deleteNode}
                             currentWorkingDirectory={currentWorkingDirectory}
                             setCurrentWorkingDirectory={setCurrentWorkingDirectory}

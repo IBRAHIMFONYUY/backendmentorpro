@@ -7,8 +7,9 @@ import type { FileSystemNode } from '@/lib/ide-data';
 interface TerminalViewProps {
     files: FileSystemNode;
     onRunTests: () => void;
-    addNode: (name: string, type: 'file' | 'folder') => void;
-    deleteNode: (path: string) => void;
+    addFile: (name: string, path: string) => boolean;
+    addFolder: (name: string, path: string) => boolean;
+    deleteNode: (path: string) => boolean;
     currentWorkingDirectory: string;
     setCurrentWorkingDirectory: (path: string) => void;
     onOpenFile: (path: string) => void;
@@ -32,7 +33,7 @@ const findNode = (path: string, root: FileSystemNode): FileSystemNode | null => 
 };
 
 
-export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile }: TerminalViewProps) {
+export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile }: TerminalViewProps) {
     const [terminalInput, setTerminalInput] = useState('');
     const [terminalOutput, setTerminalOutput] = useState([
         { type: 'output', content: 'Welcome to Backend Mentor Terminal' },
@@ -53,11 +54,20 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
     const resolvePath = (cwd: string, path: string) => {
         if (path.startsWith('/')) return path;
         const newPath = new URL(path, `file://${cwd.endsWith('/') ? cwd : cwd + '/'}`).pathname;
-        return newPath;
+        // Normalize path by removing '..'
+        const parts = newPath.split('/').reduce((acc, part) => {
+            if (part === '..') {
+                acc.pop();
+            } else if (part && part !== '.') {
+                acc.push(part);
+            }
+            return acc;
+        }, [] as string[]);
+        return '/' + parts.join('/');
     }
 
     const handleTerminalCommand = (command: string) => {
-        setTerminalOutput(prev => [...prev, {type: 'command', content: `> ${command}`}]);
+        setTerminalOutput(prev => [...prev, {type: 'command', content: `${currentWorkingDirectory}$ ${command}`}]);
         if (command) {
             setHistory(prev => [command, ...prev]);
         }
@@ -124,16 +134,20 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                     const fileToRun = getNode(path_to_run);
                     if (fileToRun?.content) {
                        output.push({type: 'output', content: `Executing ${args[1]}...`});
-                       if(fileToRun.content.includes("console.log")) {
-                           const matches = fileToRun.content.matchAll(/console.log\((.*?)\)/g);
-                           let hasOutput = false;
-                           for (const match of matches) {
-                              output.push({type: 'output', content: match ? match[1].replace(/['"`]/g, '') : "No output"});
-                              hasOutput = true;
-                           }
-                            if (!hasOutput) {
-                               output.push({type: 'output', content: 'Execution finished with no output.'});
-                            }
+                       const logOutput: string[] = [];
+                       const originalConsoleLog = console.log;
+                       console.log = (...args: any[]) => {
+                           logOutput.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' '));
+                       };
+                       try {
+                          new Function(fileToRun.content)();
+                       } catch(e: any) {
+                          logOutput.push(`Error: ${e.message}`);
+                       }
+                       console.log = originalConsoleLog;
+
+                       if (logOutput.length > 0) {
+                           output.push({type: 'output', content: logOutput.join('<br/>')});
                        } else {
                            output.push({type: 'output', content: 'Execution finished with no output.'});
                        }
@@ -155,24 +169,33 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                 break;
             case 'mkdir':
                 if (args[1]) {
-                    addNode(args[1], 'folder');
-                    output.push({type: 'output', content: `mkdir: created directory '${args[1]}'`});
+                    if (addFolder(args[1], currentWorkingDirectory)) {
+                        output.push({type: 'output', content: `mkdir: created directory '${args[1]}'`});
+                    } else {
+                         output.push({type: 'error', content: `mkdir: cannot create directory '${args[1]}': File exists`});
+                    }
                 } else {
                     output.push({type: 'error', content: 'mkdir: missing operand. Usage: mkdir <directory_name>'});
                 }
                 break;
             case 'touch':
                  if (args[1]) {
-                    addNode(args[1], 'file');
-                    output.push({type: 'output', content: `touch: created file '${args[1]}'`});
+                    if(addFile(args[1], currentWorkingDirectory)) {
+                        output.push({type: 'output', content: `touch: created file '${args[1]}'`});
+                    } else {
+                        output.push({type: 'error', content: `touch: cannot create file '${args[1]}': File exists`});
+                    }
                 } else {
                     output.push({type: 'error', content: 'touch: missing file operand. Usage: touch <filename>'});
                 }
                 break;
             case 'rm':
                  if (args[1]) {
-                    deleteNode(resolvePath(currentWorkingDirectory, args[1]));
-                    output.push({type: 'output', content: `rm: removed '${args[1]}'`});
+                    if(deleteNode(resolvePath(currentWorkingDirectory, args[1]))) {
+                        output.push({type: 'output', content: `rm: removed '${args[1]}'`});
+                    } else {
+                        output.push({type: 'error', content: `rm: cannot remove '${args[1]}': No such file or directory`});
+                    }
                 } else {
                     output.push({type: 'error', content: 'rm: missing operand. Usage: rm <file_or_directory_path>'});
                 }
@@ -203,6 +226,19 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
             case 'history':
                 output.push({type: 'output', content: history.slice().reverse().map((h, i) => `${i + 1}  ${h}`).join('<br/>')});
                 break;
+            case '!':
+                if (args[1]) {
+                    const histNum = parseInt(args[1], 10);
+                    if (!isNaN(histNum) && histNum > 0 && histNum <= history.length) {
+                        const commandToRun = history[history.length - histNum];
+                        handleTerminalCommand(commandToRun);
+                    } else {
+                         output.push({type: 'error', content: `!: event not found: ${args[1]}`});
+                    }
+                } else {
+                    output.push({type: 'error', content: `!: missing history number`});
+                }
+                return; // Prevent double output
             case 'wc':
                 if (args[1]) {
                     const content = getContent(resolvePath(currentWorkingDirectory, args[1]));
@@ -241,6 +277,12 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                 } else {
                     output.push({type: 'error', content: 'tail: missing file operand. Usage: tail <filename>'});
                 }
+                break;
+             case 'dir':
+                handleTerminalCommand('ls ' + args.slice(1).join(' '));
+                return;
+            case 'env':
+                output.push({type: 'output', content: `PWD=${currentWorkingDirectory}<br/>USER=developer<br/>SHELL=/bin/bash`});
                 break;
             default:
                output.push({type: 'error', content: `Command not found: ${command}. Type 'help'.`});
@@ -291,7 +333,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                 </div>
               ))}
                <div className="flex">
-                <span className="text-green-400">{currentWorkingDirectory}$&nbsp;</span>
+                <span className="text-green-400" dangerouslySetInnerHTML={{ __html: `${currentWorkingDirectory}$&nbsp;`.replace(/ /g, '&nbsp;')}} />
                 <input
                   ref={inputRef}
                   type="text"
@@ -307,7 +349,3 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
          </div>
     );
 }
-
-    
-
-    
