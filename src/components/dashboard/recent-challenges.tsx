@@ -1,7 +1,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -62,18 +61,16 @@ export function RecentChallenges() {
   }
 
   return (
-     <Card className="glass-effect animate-fade-in-up">
-        <CardHeader>
-            <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl">Recommended for You</CardTitle>
-                <div className="flex space-x-2">
-                    <button className="tab-button active px-4 py-2 rounded-lg font-medium" data-tab="all">All</button>
-                    <button className="tab-button px-4 py-2 rounded-lg font-medium" data-tab="backend">Backend</button>
-                    <button className="tab-button px-4 py-2 rounded-lg font-medium" data-tab="fullstack">Fullstack</button>
-                </div>
+     <div className="glass-effect rounded-2xl p-6 animate-fade-in-up">
+        <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Recommended for You</h2>
+            <div className="flex space-x-2">
+                <button className="tab-button active px-4 py-2 rounded-lg font-medium" data-tab="all">All</button>
+                <button className="tab-button px-4 py-2 rounded-lg font-medium" data-tab="backend">Backend</button>
+                <button className="tab-button px-4 py-2 rounded-lg font-medium" data-tab="fullstack">Fullstack</button>
             </div>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
             {challenges.map((challenge, index) => (
                 <div key={index} className="challenge-card rounded-xl p-4 cursor-pointer">
                     <div className="flex items-start justify-between mb-3">
@@ -95,7 +92,7 @@ export function RecentChallenges() {
                     </div>
                 </div>
             ))}
-        </CardContent>
-    </Card>
+        </div>
+    </div>
   )
 }

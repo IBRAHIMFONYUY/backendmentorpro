@@ -1,11 +1,10 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
 import { useState, useEffect } from "react";
 import { WelcomeAssistant } from "@/components/dashboard/welcome-assistant";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentChallenges } from "@/components/dashboard/recent-challenges";
-import { Overview } from "@/components/dashboard/overview";
-import { AiAnalyticsSummary } from "@/components/dashboard/ai-analytics-summary";
 import {
   Card,
   CardContent,
@@ -60,7 +59,6 @@ export default function DashboardPage() {
     <>
       <WelcomeAssistant isOpen={showWelcome} onClose={() => setShowWelcome(false)} />
        <div className="space-y-8">
-            {/* Welcome Section */}
             <div className="animate-fade-in-up">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
                     <div>
@@ -80,14 +78,10 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Stats Overview */}
             <StatsCards />
 
-            {/* Main Dashboard Content */}
             <div className="grid lg:grid-cols-3 gap-8">
-                {/* Left Column */}
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Continue Learning Section */}
                     <Card className="glass-effect animate-slide-in-left">
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -133,13 +127,10 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Recommended Challenges */}
                     <RecentChallenges />
                 </div>
 
-                {/* Right Column */}
                 <div className="space-y-8">
-                    {/* Recent Activity */}
                     <Card className="glass-effect animate-slide-in-right">
                       <CardHeader>
                         <CardTitle className="text-xl">Recent Activity</CardTitle>
@@ -187,7 +178,6 @@ export default function DashboardPage() {
                       </CardContent>
                     </Card>
 
-                    {/* Achievements */}
                      <Card className="glass-effect animate-bounce-in">
                         <CardHeader>
                           <div className="flex items-center justify-between">
@@ -219,7 +209,6 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Leaderboard */}
                     <Card className="glass-effect animate-scale-in">
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -261,7 +250,6 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    {/* AI Mentor */}
                     <Card className="glass-effect animate-float">
                         <CardHeader className="flex-row items-center space-x-3 space-y-0">
                             <div className="w-10 h-10 bg-gradient-to-r from-accent-blue to-accent-purple rounded-full flex items-center justify-center">
