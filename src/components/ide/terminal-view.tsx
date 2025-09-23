@@ -115,7 +115,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `cat: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'cat: missing file operand'});
+                    output.push({type: 'error', content: 'cat: missing file operand. Usage: cat <filename>'});
                 }
                 break;
             case 'node':
@@ -158,7 +158,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                     addNode(args[1], 'folder');
                     output.push({type: 'output', content: `mkdir: created directory '${args[1]}'`});
                 } else {
-                    output.push({type: 'error', content: 'mkdir: missing operand'});
+                    output.push({type: 'error', content: 'mkdir: missing operand. Usage: mkdir <directory_name>'});
                 }
                 break;
             case 'touch':
@@ -166,7 +166,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                     addNode(args[1], 'file');
                     output.push({type: 'output', content: `touch: created file '${args[1]}'`});
                 } else {
-                    output.push({type: 'error', content: 'touch: missing operand'});
+                    output.push({type: 'error', content: 'touch: missing file operand. Usage: touch <filename>'});
                 }
                 break;
             case 'rm':
@@ -174,7 +174,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                     deleteNode(resolvePath(currentWorkingDirectory, args[1]));
                     output.push({type: 'output', content: `rm: removed '${args[1]}'`});
                 } else {
-                    output.push({type: 'error', content: 'rm: missing operand'});
+                    output.push({type: 'error', content: 'rm: missing operand. Usage: rm <file_or_directory_path>'});
                 }
                 break;
             case 'vi':
@@ -188,7 +188,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                          output.push({type: 'error', content: `${cmd}: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: `${cmd}: missing file operand`});
+                    output.push({type: 'error', content: `${cmd}: missing file operand. Usage: ${cmd} <filename>`});
                 }
                 break;
             case 'date':
@@ -215,7 +215,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `wc: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'wc: missing file operand'});
+                    output.push({type: 'error', content: 'wc: missing file operand. Usage: wc <filename>'});
                 }
                 break;
             case 'head':
@@ -227,7 +227,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `head: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'head: missing file operand'});
+                    output.push({type: 'error', content: 'head: missing file operand. Usage: head <filename>'});
                 }
                 break;
             case 'tail':
@@ -239,7 +239,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `tail: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'tail: missing file operand'});
+                    output.push({type: 'error', content: 'tail: missing file operand. Usage: tail <filename>'});
                 }
                 break;
             default:
@@ -307,5 +307,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
          </div>
     );
 }
+
+    
 
     
