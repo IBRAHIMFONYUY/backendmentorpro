@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
@@ -159,13 +159,13 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
   const { toast } = useToast();
 
-  const augmentedChallenge: Challenge = {
+  const augmentedChallenge = useMemo(() => ({
     ...challenge,
     fileSystem: { ...challenge.fileSystem, children: [
         ...(challenge.fileSystem.children || []),
         { name: 'README.md', type: 'file', path: '/README.md', content: challenge.readme }
     ]}
-  };
+  }), [challenge]);
   
   const rightResizablePanelRef = useRef<Panel>(null);
   const filePanelRef = useRef<Panel>(null);
@@ -253,7 +253,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } finally {
         setIsSubmitting(false);
     }
-  }, [challenge.description, challenge.testCases, challenge.title, files, toast]);
+  }, [challenge.title, challenge.description, challenge.testCases, files, toast]);
   
   const handleCodeChange = (newCode: string) => {
       setFiles((prevFiles) => {
@@ -742,7 +742,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
       <div className="h-screen w-screen flex flex-col bg-background ide-body" onClick={() => { setFileContextMenu(null); setEditorContextMenu(null); }} onContextMenu={(e) => onFileContextMenu(e, '/')}>
         <IdeTopBar 
-          challenge={challenge}
+          challenge={augmentedChallenge}
           onNewProject={onNewProject}
           onAiClick={onAiClick}
           onSettingsClick={onSettingsClick}
