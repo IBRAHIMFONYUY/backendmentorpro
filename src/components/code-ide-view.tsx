@@ -323,6 +323,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     handleSubmit();
   }, [handleSubmit]);
 
+  const onNewProject = useCallback(() => setNewProjectModalOpen(true), []);
+  const onAiClick = useCallback(() => setAiModalOpen(true), []);
+  const onSettingsClick = useCallback(() => setSettingsModalOpen(true), []);
+
+
   useEffect(() => {
     const handleGlobalClick = () => {
         setFileContextMenu(null);
@@ -738,9 +743,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       <div className="h-screen w-screen flex flex-col bg-background ide-body" onClick={() => { setFileContextMenu(null); setEditorContextMenu(null); }} onContextMenu={(e) => onFileContextMenu(e, '/')}>
         <IdeTopBar 
           challenge={challenge}
-          onNewProject={() => setNewProjectModalOpen(true)}
-          onAiClick={() => setAiModalOpen(true)}
-          onSettingsClick={() => setSettingsModalOpen(true)}
+          onNewProject={onNewProject}
+          onAiClick={onAiClick}
+          onSettingsClick={onSettingsClick}
           onRunCode={runCodeAction}
           onSubmit={submitAction}
           isRunning={isRunning}
@@ -808,3 +813,5 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+    
