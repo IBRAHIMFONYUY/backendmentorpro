@@ -27,7 +27,7 @@ export function AiAnalyticsSummary() {
   }, [])
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card className="glass-effect">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-6 w-6" />

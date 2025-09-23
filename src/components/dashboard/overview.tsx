@@ -8,7 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 
 export function Overview() {
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card className="col-span-1 lg:col-span-2 glass-effect">
       <CardHeader>
         <CardTitle>Weekly Activity</CardTitle>
       </CardHeader>
@@ -33,6 +33,7 @@ export function Overview() {
               <ChartTooltip
                 cursor={false}
                 content={<ChartTooltipContent
+                  className="glass-effect"
                   labelKey="challenges"
                   indicator="dot"
                   formatter={(value, name) => (
