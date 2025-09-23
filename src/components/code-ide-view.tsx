@@ -16,7 +16,6 @@ import { RightPanel } from "./ide/right-panel";
 import { IdeStatusBar } from "./ide/ide-status-bar";
 import { SettingsModal } from "./ide/settings-modal";
 import { CommandPalette } from "./ide/command-palette";
-import { ArrowLeft, Bot, ChevronRight, Cog, Loader2, Play, PlusCircle, Send, Share2 } from "lucide-react";
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [files, setFiles] = useState<FileSystemNode>(initialFiles);
@@ -145,12 +144,24 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Dummy ref for now, will connect to editor later
+  const editorRef = { current: null }; 
+  const onSettingsChange = (settings: any) => {
+    console.log("Settings changed:", settings);
+    // Here you would apply settings to the Monaco editor instance
+    // For example: editorRef.current?.updateOptions({ fontSize: settings.fontSize });
+  };
+
   return (
     <>
       <Script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js" />
       <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
       <NewProjectModal isOpen={newProjectModalOpen} onClose={() => setNewProjectModalOpen(false)} />
-      <SettingsModal isOpen={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
+      <SettingsModal 
+        isOpen={settingsModalOpen} 
+        onClose={() => setSettingsModalOpen(false)}
+        onSettingsChange={onSettingsChange}
+      />
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
 
       <div className="h-screen w-screen flex flex-col bg-background ide-body">
@@ -160,6 +171,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           onAiClick={() => setAiModalOpen(true)}
           onSettingsClick={() => setSettingsModalOpen(true)}
           onRunCode={() => {
+            // This is a temporary way to access the panel's functions.
+            // A more robust solution would use a ref passed to the component.
             const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
             if (rightPanel) rightPanel.runCode();
           }}
@@ -213,3 +226,5 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+    
