@@ -30,7 +30,7 @@ interface SettingsModalProps {
 
 const defaultSettings: IdeSettings = {
     geminiApiKey: "",
-    theme: "dark",
+    theme: "vs-dark",
     fontSize: 14,
     tabSize: 4,
     autoSave: true,
@@ -56,12 +56,7 @@ export function SettingsModal({ isOpen, onClose, onSettingsChange, initialSettin
   };
 
   const handleValueChange = (key: keyof IdeSettings, value: any) => {
-    setSettings(prev => {
-        const newSettings = { ...prev, [key]: value };
-        // Apply settings in real-time by calling the parent callback
-        onSettingsChange(newSettings);
-        return newSettings;
-    });
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
   
   return (
@@ -69,7 +64,7 @@ export function SettingsModal({ isOpen, onClose, onSettingsChange, initialSettin
       <DialogContent className="glass-effect modal sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Customize your IDE experience. Changes are applied in real-time.</DialogDescription>
+          <DialogDescription>Customize your IDE experience. Changes are saved when you close.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
           <div>
@@ -93,8 +88,8 @@ export function SettingsModal({ isOpen, onClose, onSettingsChange, initialSettin
             >
               <SelectTrigger id="themeSelect"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="dark">Dark (vs-dark)</SelectItem>
-                <SelectItem value="light">Light (vs)</SelectItem>
+                <SelectItem value="vs-dark">Dark (vs-dark)</SelectItem>
+                <SelectItem value="vs-light">Light (vs)</SelectItem>
               </SelectContent>
             </Select>
           </div>
