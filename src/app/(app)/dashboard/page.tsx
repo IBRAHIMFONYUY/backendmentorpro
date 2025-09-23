@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUpRight, Crown, Bot, Check, Clock, Code, ExternalLink, Fire, Plus, Star, Trophy, Users } from "lucide-react";
+import { ArrowUpRight, Crown, Bot, Check, Clock, Code, ExternalLink, Flame, Plus, Star, Trophy, Users } from "lucide-react";
 import Image from "next/image";
 
 export default function DashboardPage() {
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                             
                              <div className="activity-item flex items-start space-x-3 p-3 rounded-lg">
                                 <div className="w-8 h-8 bg-accent-red/20 text-accent-red rounded-full flex items-center justify-center">
-                                    <Fire className="h-4 w-4" />
+                                    <Flame className="h-4 w-4" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="font-medium">7-day coding streak!</div>
