@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import Link from 'next/link';
 
 type Notification = {
   id: number;
@@ -33,7 +34,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex min-h-screen w-full bg-background">
         <aside className="fixed left-0 top-0 h-full w-64 glass-effect z-40 hidden lg:block">
-          <MainNav />
+           <ScrollArea className="h-full">
+            <MainNav />
+          </ScrollArea>
         </aside>
 
         <div className="lg:pl-64 flex flex-col w-full">
@@ -79,7 +82,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative">
                       <Bell className="h-5 w-5 text-primary" />
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center text-xs font-bold text-white">{notifications.length}</span>
+                      {notifications.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center text-xs font-bold text-white">{notifications.length}</span>
+                      )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-0" align="end">
@@ -87,8 +92,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <h4 className="font-medium text-foreground">Notifications</h4>
                   </div>
                   <Separator />
-                  <div className="p-2 space-y-1">
-                    {notifications.map((notification) => (
+                  <div className="p-2 space-y-1 max-h-80 overflow-y-auto">
+                    {notifications.length > 0 ? notifications.map((notification) => (
                       <div key={notification.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedNotification(notification)}>
                           {notification.icon}
                           <div className="flex-1">
@@ -96,8 +101,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                               <p className="text-xs text-muted-foreground">{notification.time}</p>
                           </div>
                       </div>
-                    ))}
+                    )) : (
+                      <p className="p-4 text-sm text-muted-foreground text-center">No new notifications.</p>
+                    )}
                   </div>
+                  {notifications.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="p-2">
+                        <Button variant="ghost" size="sm" className="w-full">Clear all</Button>
+                      </div>
+                    </>
+                  )}
                 </PopoverContent>
               </Popover>
               <UserNav />

@@ -21,8 +21,7 @@ import { ScrollArea } from "./ui/scroll-area";
 const mainNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/challenges", icon: Code, label: "Challenges" },
-  { href: "/playground", icon: TestTube, label: "Playground" },
-  { href: "/debugger", icon: BrainCircuit, label: "AI Debugger" },
+  { href: "/playground", icon: BrainCircuit, label: "Code Editor" },
 ];
 
 const aiToolsNavItems = [
@@ -70,10 +69,12 @@ export function MainNav() {
   return (
     <div className="flex h-full flex-col">
        <div className="flex items-center gap-3 p-4 px-4 pb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center">
-            <Code className="text-white text-lg" />
-        </div>
-        <span className="text-xl font-bold gradient-text">BackendMentorAI</span>
+        <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center">
+                <Code className="text-white text-lg" />
+            </div>
+            <span className="text-xl font-bold gradient-text">BackendMentorAI</span>
+        </Link>
       </div>
 
       <ScrollArea className="flex-1">
@@ -87,7 +88,7 @@ export function MainNav() {
           <div>
             <NavHeader>AI Tools</NavHeader>
             <nav className="space-y-1 mt-2">
-                {renderNavItems(aiToolsNavItems)}
+                {renderNavItems(aiToolsNavItems as any)}
             </nav>
           </div>
 
@@ -96,7 +97,7 @@ export function MainNav() {
           <div>
             <NavHeader>Profile</NavHeader>
             <nav className="space-y-1 mt-2">
-                {renderNavItems(userNavItems)}
+                {renderNavItems(userNavItems as any)}
             </nav>
           </div>
         </div>
