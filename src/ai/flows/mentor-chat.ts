@@ -76,10 +76,11 @@ const mentorChatFlow = ai.defineFlow(
     if (input.media) {
       const {output} = await ai.generate({
         model: 'googleai/gemini-2.5-flash',
-        prompt: [
-          {text: prompt.compile(input)},
-          {media: {url: input.media.url, contentType: input.media.contentType}},
-        ],
+        prompt: {
+            text: prompt.prompt!,
+            input,
+        },
+        media: [{url: input.media.url, contentType: input.media.contentType}],
         output: {schema: MentorChatOutputSchema},
       });
       return output!;
