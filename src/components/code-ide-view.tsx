@@ -20,7 +20,7 @@ import { CreateFileModal } from "./ide/create-file-modal";
 import { CreateFolderModal } from "./ide/create-folder-modal";
 import { ContextMenu } from "./ide/context-menu";
 import { RenameNodeModal } from "./ide/rename-node-modal";
-import { Copy, CopyPlus, Edit, Files, Folder, Paste, Trash2 } from "lucide-react";
+import { Copy, CopyPlus, Edit, Files, Folder, ClipboardPaste, Trash2, FilePlus2 } from "lucide-react";
 
 
 const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
@@ -407,10 +407,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         const isFolder = node.type === 'folder';
 
         return [
-            { label: "New File", icon: <FilePlus/>, action: () => setCreateFileModalOpen(true), separator: true, disabled: !isFolder },
+            { label: "New File", icon: <FilePlus2/>, action: () => setCreateFileModalOpen(true), separator: true, disabled: !isFolder },
             { label: "New Folder", icon: <Folder/>, action: () => setCreateFolderModalOpen(true), disabled: !isFolder },
             { label: "Copy", icon: <Copy />, action: () => setClipboard({ path: contextMenu.path, operation: 'copy' }) },
-            { label: "Paste", icon: <Paste />, action: () => handlePaste(isFolder ? contextMenu.path : (contextMenu.path.substring(0, contextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard },
+            { label: "Paste", icon: <ClipboardPaste />, action: () => handlePaste(isFolder ? contextMenu.path : (contextMenu.path.substring(0, contextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard },
             { label: "Duplicate", icon: <CopyPlus />, action: () => duplicateNode(contextMenu.path), separator: true },
             { label: "Rename", icon: <Edit />, action: () => setRenameModal({ path: node.path, name: node.name, type: node.type }) },
             { label: "Delete", icon: <Trash2 />, action: () => deleteNode(contextMenu.path), separator: true, },
@@ -515,3 +515,5 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+    

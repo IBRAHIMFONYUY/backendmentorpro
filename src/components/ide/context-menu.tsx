@@ -2,7 +2,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Cut, Copy, Paste, Edit, Trash2, CopyPlus } from "lucide-react";
+import { Cut, Copy, Paste, Edit, Trash2, CopyPlus, ClipboardPaste } from "lucide-react";
 
 interface MenuItem {
     label: string;

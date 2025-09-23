@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus, ChevronsRightLeft, Rows, Columns } from 'lucide-react';
+import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus2, ChevronsRightLeft, Rows, Columns } from 'lucide-react';
 import type { FileSystemNode, TestResult } from '@/lib/ide-data';
 import { cn } from '@/lib/utils';
 
@@ -105,7 +105,7 @@ export function FileExplorer({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold tracking-wide uppercase">Explorer</h3>
                 <div className="flex space-x-2">
-                    <button onClick={onNewFile} className="text-gray-400 hover:text-white" title="New File"><FilePlus className="h-4 w-4" /></button>
+                    <button onClick={onNewFile} className="text-gray-400 hover:text-white" title="New File"><FilePlus2 className="h-4 w-4" /></button>
                     <button onClick={onNewFolder} className="text-gray-400 hover:text-white" title="New Folder"><FolderPlus className="h-4 w-4" /></button>
                     <button onClick={onRefresh} className="text-gray-400 hover:text-white" title="Refresh"><RefreshCw className="h-4 w-4" /></button>
                     <button onClick={onExpandAll} className="text-gray-400 hover:text-white" title="Expand All"><Rows className="h-4 w-4" /></button>
