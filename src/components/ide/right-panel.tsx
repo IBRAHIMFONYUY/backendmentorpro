@@ -40,7 +40,7 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
     }));
 
     return (
-        <div className="h-full flex flex-col bg-[#1e293b]" data-right-panel-ref>
+        <div className="h-full flex flex-col bg-[#1e293b]">
             <div className="flex items-center px-2 border-b border-gray-700 h-10 shrink-0 bg-gray-900">
                 <button onClick={() => setActiveTab('output')} className={`px-4 py-2 text-sm flex items-center gap-2 ${activeTab === 'output' ? 'tab-active' : 'text-gray-400'}`}><TerminalIcon className="h-4 w-4"/>Output</button>
                 <button onClick={() => setActiveTab('api')} className={`px-4 py-2 text-sm flex items-center gap-2 ${activeTab === 'api' ? 'tab-active' : 'text-gray-400'}`}><FlaskConical className="h-4 w-4"/>API Test</button>
@@ -88,3 +88,5 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
 });
 
 RightPanel.displayName = "RightPanel";
+
+    

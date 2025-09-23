@@ -111,6 +111,10 @@ const addNodeToTree = (tree: FileSystemNode, basePath: string, name: string, typ
     return updateTree(tree);
 };
 
+type RightPanelRef = {
+  runCode: () => void;
+  submit: () => void;
+};
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [files, setFiles] = usePersistentState<FileSystemNode>('fileSystem', initialFiles);
@@ -149,8 +153,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
   const { toast } = useToast();
   
-  const rightPanelRef = useRef<Panel>(null);
+  const rightResizablePanelRef = useRef<Panel>(null);
   const filePanelRef = useRef<Panel>(null);
+  const rightPanelRef = useRef<RightPanelRef>(null);
   const rightPanelLastSize = useRef<number>(35);
 
   const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void) => {
@@ -248,13 +253,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
   
   const runCodeAction = () => {
-    const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
-    if (rightPanel) rightPanel.runCode();
+    rightPanelRef.current?.runCode();
   };
 
   const submitAction = () => {
-    const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
-    if (rightPanel) rightPanel.submit();
+    rightPanelRef.current?.submit();
   };
 
   useEffect(() => {
@@ -279,12 +282,12 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             break;
           case 'j':
             e.preventDefault();
-            if (rightPanelRef.current) {
-                if (rightPanelRef.current.getSize() > 5) {
-                    rightPanelLastSize.current = rightPanelRef.current.getSize();
-                    rightPanelRef.current.resize(0);
+            if (rightResizablePanelRef.current) {
+                if (rightResizablePanelRef.current.getSize() > 5) {
+                    rightPanelLastSize.current = rightResizablePanelRef.current.getSize();
+                    rightResizablePanelRef.current.resize(0);
                 } else {
-                    rightPanelRef.current.resize(rightPanelLastSize.current);
+                    rightResizablePanelRef.current.resize(rightPanelLastSize.current);
                 }
             }
             break;
@@ -708,9 +711,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
-                <ResizablePanel ref={rightPanelRef} defaultSize={35} minSize={10}>
+                <ResizablePanel ref={rightResizablePanelRef} defaultSize={35} minSize={10}>
                   <RightPanel
-                      ref={rightPanelRef as any}
+                      ref={rightPanelRef}
                       testResults={testResults}
                       files={files}
                       handleRunCode={handleRunCode}
@@ -732,3 +735,5 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+    
