@@ -24,6 +24,8 @@ import { Ban, ClipboardPaste, Copy, CopyPlus, Edit, FileCog, FilePlus2, Folder, 
 import type { editor } from "monaco-editor";
 import { languageMap } from "./ide/editor-panel";
 import { reviewChallengeSubmission } from "@/ai/flows/review-challenge-submission";
+import { useRouter } from "next/navigation";
+
 
 function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((prevState: T) => T)) => void] {
   const [state, setState] = useState<T>(defaultValue);
@@ -123,6 +125,7 @@ type RightPanelRef = {
 };
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
+  const router = useRouter();
   const [files, setFiles] = usePersistentState<FileSystemNode>(`fileSystem_${challenge.id}`, challenge.fileSystem);
   const [openTabs, setOpenTabs] = usePersistentState<string[]>(`openTabs_${challenge.id}`, ['/README.md']);
   const [activeTab, setActiveTab] = usePersistentState<string>(`activeTab_${challenge.id}`, '/README.md');
@@ -238,7 +241,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
         const passedCount = result.results.filter(r => r.status === 'passed').length;
         if (result.overallStatus === 'passed') {
-            toast({ title: "Challenge Completed!", description: "Great job! All tests passed." });
+            toast({ title: "Challenge Completed!", description: "Great job! All tests passed. Redirecting to dashboard..." });
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 5000);
         } else {
             toast({ 
                 variant: "destructive",
@@ -253,7 +259,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } finally {
         setIsSubmitting(false);
     }
-  }, [challenge.title, challenge.description, files, challenge.testCases, toast]);
+  }, [challenge.title, challenge.description, files, challenge.testCases, toast, router]);
   
   const handleCodeChange = (newCode: string) => {
       setFiles((prevFiles) => {
@@ -294,26 +300,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         return newTabs;
       });
   }
-
-  const executeCommand = (command: string) => {
-    switch (command) {
-      case 'newProject':
-        setNewProjectModalOpen(true);
-        break;
-      case 'openSettings':
-        setSettingsModalOpen(true);
-        break;
-      case 'createFile':
-        setCreateFileModalOpen(true);
-        break;
-      case 'createFolder':
-        setCreateFolderModalOpen(true);
-        break;
-      default:
-        toast({ title: "Command not recognized", variant: "destructive" });
-    }
-    setCommandPaletteOpen(false);
-  }
   
   const runCodeAction = useCallback(() => {
     handleRunCode();
@@ -338,6 +324,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
+          case 's':
+            e.preventDefault();
+            toast({ title: 'File Saved!', description: 'Your changes have been saved to local storage.'});
+            break;
           case 'p':
             if (e.shiftKey) {
               e.preventDefault();
@@ -383,7 +373,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       window.removeEventListener('click', handleGlobalClick);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [runCodeAction, submitAction]);
+  }, [runCodeAction, submitAction, toast]);
 
   const onSettingsChange = (newSettings: IdeSettings) => {
     setSettings(newSettings);
@@ -813,3 +803,5 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+    
