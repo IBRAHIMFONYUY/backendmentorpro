@@ -56,7 +56,7 @@ export function StatsCards() {
             <div className="mt-2 flex items-center text-accent-green text-sm">
                 <Star className="h-4 w-4 mr-1" />
                 <span>2 new this week</span>
-            </p>
+            </div>
         </div>
         
         <div className="glass-effect rounded-2xl p-6 card-hover">

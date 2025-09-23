@@ -7,7 +7,7 @@ import { UserNav } from "@/components/user-nav";
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Bell, Flame, Menu, Search, Star } from 'lucide-react';
-import { Input } from '../ui/input';
+import { Input } from '@/components/ui/input';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
