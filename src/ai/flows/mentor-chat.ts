@@ -81,7 +81,7 @@ const mentorChatFlow = ai.defineFlow(
           { media: { url: input.media.url, contentType: input.media.contentType } },
         ],
         output: {schema: MentorChatOutputSchema},
-        input,
+        input: input,
       });
       return output!;
     }
