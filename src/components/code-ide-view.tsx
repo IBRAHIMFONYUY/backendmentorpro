@@ -20,10 +20,11 @@ import { CreateFileModal } from "./ide/create-file-modal";
 import { CreateFolderModal } from "./ide/create-folder-modal";
 import { ContextMenu } from "./ide/context-menu";
 import { RenameNodeModal } from "./ide/rename-node-modal";
-import { Copy, CopyPlus, Edit, Files, Folder, ClipboardPaste, Trash2, FilePlus2 } from "lucide-react";
+import { Copy, CopyPlus, Edit, Folder, ClipboardPaste, Trash2, FilePlus2 } from "lucide-react";
 
 
 const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
+    if (!node) return null;
     if (node.path === path) return node;
     if (node.children) {
         for (const child of node.children) {
