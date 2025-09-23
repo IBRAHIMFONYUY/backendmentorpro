@@ -30,6 +30,17 @@ const languageMap: { [key: string]: string } = {
     css: "css",
     java: "java",
     rs: "rust",
+    env: "shell",
+    yml: "yaml",
+    yaml: "yaml",
+    c: "c",
+    cpp: "cpp",
+    go: "go",
+    php: "php",
+    rb: "ruby",
+    swift: "swift",
+    kt: "kotlin",
+    scala: "scala",
 };
 
 
@@ -119,20 +130,18 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
     }, [onCodeChange, onEditorReady]);
 
     useEffect(() => {
-        if (editorRef.current) {
+        if (editorRef.current && monacoRef.current) {
             const model = editorRef.current.getModel();
-            
-            // Only update the model's value if it's different from the active file content.
-            // This is crucial to prevent the cursor from jumping.
-            if (model && model.getValue() !== activeFileContent) {
-                editorRef.current.setValue(activeFileContent);
-            }
-            
             const fileExtension = activeTab.split('.').pop() || '';
             const language = languageMap[fileExtension] || 'plaintext';
-
-            if (model && monacoRef.current) {
+            
+            if (model) {
                 monacoRef.current.editor.setModelLanguage(model, language);
+                // Only update the model's value if it's different from the active file content.
+                // This is crucial to prevent the cursor from jumping.
+                if (model.getValue() !== activeFileContent) {
+                    editorRef.current.setValue(activeFileContent);
+                }
             }
         }
     }, [activeTab, activeFileContent]);
