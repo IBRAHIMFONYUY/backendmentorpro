@@ -1,6 +1,8 @@
-import { CodeIdeView } from "@/components/code-ide-view";
 import { challenges } from "@/lib/data";
 import type { Metadata } from "next";
+import dynamic from 'next/dynamic';
+
+const CodeIdeView = dynamic(() => import('@/components/code-ide-view').then(mod => mod.CodeIdeView), { ssr: false });
 
 export const metadata: Metadata = {
     title: "Backend Mentor - Playground",
