@@ -25,7 +25,7 @@ import type { editor } from "monaco-editor";
 import { languageMap } from "./ide/editor-panel";
 import { reviewChallengeSubmission } from "@/ai/flows/review-challenge-submission";
 
-const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | ((prevState: T) => T)) => void] => {
+function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((prevState: T) => T)) => void] {
   const [state, setState] = useState<T>(defaultValue);
 
   useEffect(() => {
@@ -756,7 +756,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           <ResizablePanelGroup direction="horizontal" className="flex-1">
               <ResizablePanel ref={filePanelRef} defaultSize={18} minSize={15} maxSize={30} collapsible className="hidden md:block ide-sidebar">
                   <FileExplorer
-                      files={files}
+                      files={augmentedChallenge.fileSystem}
                       activeTab={activeTab}
                       onFileSelect={handleFileSelect}
                       testResults={testResults}
@@ -781,7 +781,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       activeTab={activeTab}
                       setActiveTab={setActiveTab}
                       onCloseTab={handleCloseTab}
-                      files={files}
+                      files={augmentedChallenge.fileSystem}
                       onCodeChange={handleCodeChange}
                       editorSettings={settings}
                       onContextMenu={onEditorContextMenu}
@@ -813,5 +813,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
-    
