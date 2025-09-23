@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Bot, Bug, Lightbulb, Loader2, Rocket, Send, X, User, Paperclip, Mic, Image as ImageIcon } from "lucide-react";
 import { mentorChat } from "@/ai/flows/mentor-chat";
@@ -84,17 +84,22 @@ export function AiAssistantModal({ isOpen, onClose }: AiAssistantModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="glass-effect rounded-2xl p-0 max-w-2xl w-full flex flex-col h-[70vh] max-h-[800px]">
-        <div className="flex justify-between items-center p-4 border-b border-border/50">
+        <DialogHeader className="flex-row justify-between items-center p-4 border-b border-border/50 space-y-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
                 <Bot className="text-white"/>
             </div>
-            <span className="text-xl font-bold">Rahim - AI Mentor</span>
+            <div>
+              <DialogTitle className="text-xl font-bold text-left">Rahim - AI Mentor</DialogTitle>
+              <DialogDescription className="text-left text-sm text-muted-foreground">Your personal AI coding assistant</DialogDescription>
+            </div>
           </div>
-          <Button onClick={onClose} variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <X />
-          </Button>
-        </div>
+          <DialogClose asChild>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              <X />
+            </Button>
+          </DialogClose>
+        </DialogHeader>
 
         <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
             <div className="space-y-6">
