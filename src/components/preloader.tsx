@@ -60,19 +60,16 @@ const Preloader = () => {
             dot.style.opacity = '0';
             dot.style.zIndex = '5';
             
-            // Start from random positions around the screen
             const startX = Math.random() * window.innerWidth;
             const startY = Math.random() * window.innerHeight;
             dot.style.left = startX + 'px';
             dot.style.top = startY + 'px';
             
-            // Calculate final position to form letters
             const finalX = centerX + dotPos.x;
             const finalY = centerY + dotPos.y;
             
             container.appendChild(dot);
             
-            // Phase 1: Dots move to form letter shapes
             setTimeout(() => {
                 dot.style.transition = 'all 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
                 dot.style.opacity = '1';
@@ -81,31 +78,24 @@ const Preloader = () => {
                 dot.style.transform = 'scale(1.2)';
             }, index * 80);
             
-            // Phase 2: Hold the letter formation with pulsing animation
             setTimeout(() => {
                 dot.style.transform = 'scale(1.5)';
                 dot.style.boxShadow = '0 0 25px rgba(255, 255, 255, 1)';
-                
-                // Add pulsing animation to make letters more visible
                 dot.style.animation = 'letterPulse 0.8s ease-in-out infinite alternate';
             }, 3500 + index * 15);
             
-            // Phase 3: Enhanced glow effect for better visibility
             setTimeout(() => {
                 dot.style.transform = 'scale(2)';
                 dot.style.boxShadow = '0 0 40px rgba(255, 255, 255, 1), 0 0 80px rgba(255, 255, 255, 0.5)';
             }, 5000 + index * 10);
             
-            // Phase 4: Dots merge and transform into actual letters
             setTimeout(() => {
                 dot.style.transition = 'all 1.5s ease-out';
                 dot.style.animation = 'none';
                 if (index < bDots.length) {
-                    // B dots converge to center-left
                     dot.style.left = (centerX - 50) + 'px';
                     dot.style.top = centerY + 'px';
                 } else {
-                    // M dots converge to center-right  
                     dot.style.left = (centerX + 50) + 'px';
                     dot.style.top = centerY + 'px';
                 }
@@ -115,8 +105,9 @@ const Preloader = () => {
         });
     }
 
-    // Other animation functions...
     createFormingDots();
+
+    // No need to call other functions, they are CSS-based or not part of this component's logic
   }, []);
 
   return (
@@ -145,3 +136,5 @@ const Preloader = () => {
 };
 
 export default Preloader;
+
+    
