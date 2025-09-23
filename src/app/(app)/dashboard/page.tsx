@@ -19,6 +19,8 @@ import Image from "next/image";
 import { AiAssistantModal } from "@/components/ai-assistant-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Overview } from "@/components/dashboard/overview";
+import { AiAnalyticsSummary } from "@/components/dashboard/ai-analytics-summary";
 
 export default function DashboardPage() {
   const [showWelcome, setShowWelcome] = useState(false);
@@ -153,48 +155,10 @@ export default function DashboardPage() {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <Card className="glass-effect animate-slide-in-left card-hover" onClick={() => setContinueModalOpen(true)}>
-                        <CardHeader className="flex-row items-center justify-between">
-                            <CardTitle className="text-2xl">Continue Learning</CardTitle>
-                            <Button variant="ghost" size="icon">
-                                <ExternalLink className="h-5 w-5" />
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="bg-card/50 rounded-xl p-6 border border-border/50">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div>
-                                        <h3 className="text-xl font-bold mb-2">Build a REST API with Authentication</h3>
-                                        <p className="text-muted-foreground mb-3">Create a secure Node.js API with JWT authentication, user registration, and protected routes.</p>
-                                        <div className="flex items-center space-x-3 flex-wrap gap-y-2">
-                                            <Badge variant="secondary">Medium</Badge>
-                                            <Badge variant="outline">Node.js</Badge>
-                                            <Badge variant="outline">JWT</Badge>
-                                            <Badge variant="outline">Express</Badge>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-3xl font-bold text-primary">75%</div>
-                                        <div className="text-sm text-muted-foreground">Complete</div>
-                                    </div>
-                                </div>
-                                
-                                <div className="w-full bg-border rounded-full h-2.5 mb-4">
-                                    <div className="bg-gradient-to-r from-primary to-secondary h-2.5 rounded-full" style={{width: '75%'}}></div>
-                                </div>
-                                
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                        <span><Clock className="inline mr-1 h-4 w-4" /> 2h 30m left</span>
-                                        <span><Check className="inline mr-1 h-4 w-4" /> 6/8 tasks</span>
-                                    </div>
-                                    <Button onClick={() => setContinueModalOpen(true)} className="btn-primary-gradient">
-                                        Continue
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <AiAnalyticsSummary />
+                      <Overview />
+                    </div>
 
                     <RecentChallenges />
                 </div>
