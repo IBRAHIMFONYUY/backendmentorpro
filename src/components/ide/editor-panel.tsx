@@ -1,5 +1,6 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import type { FileSystemNode } from "@/lib/ide-data";
 import { X } from "lucide-react";
 import type { editor } from "monaco-editor";
@@ -45,10 +46,6 @@ const languageMap: { [key: string]: string } = {
 
 
 export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, files, onCodeChange, editorSettings, onContextMenu, onEditorReady }: EditorPanelProps) {
-    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-    const editorContainerRef = useRef<HTMLDivElement>(null);
-    const monacoRef = useRef<any>(null);
-
     const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
         if (!node) return null;
         if (node.path === path) return node;
@@ -63,101 +60,14 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
   
     const activeFile = findNode(activeTab, files);
     const activeFileContent = activeFile?.content ?? '';
+    const fileExtension = activeTab.split('.').pop() || '';
+    const language = languageMap[fileExtension] || 'plaintext';
 
-    useEffect(() => {
-      const initMonaco = () => {
-        if (editorContainerRef.current && !editorRef.current) {
-          const editorInstance = monacoRef.current.editor.create(editorContainerRef.current, {
-            value: activeFileContent,
-            language: 'javascript',
-            theme: 'vs-dark',
-            fontSize: 14,
-            fontFamily: "JetBrains Mono",
-            minimap: { enabled: true },
-            scrollBeyondLastLine: true,
-            automaticLayout: true,
-            suggestOnTriggerCharacters: true,
-            quickSuggestions: true,
-            wordWrap: "on",
-            lineNumbers: "on",
-            renderWhitespace: "selection",
-            bracketPairColorization: { enabled: true },
-            autoClosingBrackets: "always",
-            autoClosingQuotes: "always",
-            autoIndent: "full",
-            tabSize: 4,
-            insertSpaces: true,
-            detectIndentation: true,
-            formatOnType: true,
-            formatOnPaste: true,
-            suggestSelection: "first",
-            cursorStyle: "line",
-            cursorBlinking: "smooth",
-            renderLineHighlight: "all",
-            roundedSelection: false,
-            smoothScrolling: true,
-          });
-
-          editorInstance.onDidChangeModelContent(() => {
-              const value = editorInstance.getValue();
-              onCodeChange(value || '');
-          });
-
-          editorRef.current = editorInstance;
-          onEditorReady(editorInstance);
-        }
-      };
-
-      if ((window as any).monaco) {
-        monacoRef.current = (window as any).monaco;
-        initMonaco();
-      } else {
-        const script = document.querySelector('script[src*="monaco-editor"]');
-        script?.addEventListener('load', () => {
-          (window as any).require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
-          (window as any).require(['vs/editor/editor.main'], () => {
-            monacoRef.current = (window as any).monaco;
-            initMonaco();
-          });
-        });
-      }
-
-      return () => {
-          editorRef.current?.dispose();
-          editorRef.current = null;
-      };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [onCodeChange, onEditorReady]);
-
-    useEffect(() => {
-        if (editorRef.current && monacoRef.current) {
-            const model = editorRef.current.getModel();
-            const fileExtension = activeTab.split('.').pop() || '';
-            const language = languageMap[fileExtension] || 'plaintext';
-            
-            if (model) {
-                monacoRef.current.editor.setModelLanguage(model, language);
-                // Only update the model's value if it's different from the active file content.
-                // This is crucial to prevent the cursor from jumping.
-                if (model.getValue() !== activeFileContent) {
-                    editorRef.current.setValue(activeFileContent);
-                }
-            }
-        }
-    }, [activeTab, activeFileContent]);
-
-
-    useEffect(() => {
-        if (editorRef.current && editorSettings && monacoRef.current) {
-            editorRef.current.updateOptions({
-                fontSize: editorSettings.fontSize,
-                tabSize: editorSettings.tabSize,
-                wordWrap: editorSettings.wordWrap ? 'on' : 'off',
-                minimap: { enabled: editorSettings.minimap },
-            });
-            monacoRef.current.editor.setTheme(editorSettings.theme === 'light' ? 'vs' : 'vs-dark');
-        }
-    }, [editorSettings]);
+    const handleEditorDidMount: OnMount = (editor, monaco) => {
+        onEditorReady(editor);
+        // You can add command listeners here if needed
+        // e.g. editor.addCommand(...)
+    }
 
     return (
         <>
@@ -179,11 +89,47 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
                 })}
             </div>
             <div 
-                className="flex-1 relative bg-[#1e1e1e]" 
-                ref={editorContainerRef}
+                className="flex-1 relative" 
                 onContextMenu={onContextMenu}
             >
-                {openTabs.length === 0 && (
+                {openTabs.length > 0 ? (
+                    <Editor
+                      height="100%"
+                      path={activeTab}
+                      defaultValue={activeFileContent}
+                      language={language}
+                      theme={editorSettings?.theme}
+                      value={activeFileContent}
+                      onMount={handleEditorDidMount}
+                      onChange={(value) => onCodeChange(value || '')}
+                      options={{
+                          fontSize: editorSettings?.fontSize,
+                          tabSize: editorSettings?.tabSize,
+                          wordWrap: editorSettings?.wordWrap ? "on" : "off",
+                          minimap: { enabled: editorSettings?.minimap },
+                          scrollBeyondLastLine: true,
+                          automaticLayout: true,
+                          suggestOnTriggerCharacters: true,
+                          quickSuggestions: true,
+                          lineNumbers: "on",
+                          renderWhitespace: "selection",
+                          bracketPairColorization: { enabled: true },
+                          autoClosingBrackets: "always",
+                          autoClosingQuotes: "always",
+                          autoIndent: "full",
+                          insertSpaces: true,
+                          detectIndentation: true,
+                          formatOnType: true,
+                          formatOnPaste: true,
+                          suggestSelection: "first",
+                          cursorStyle: "line",
+                          cursorBlinking: "smooth",
+                          renderLineHighlight: "all",
+                          roundedSelection: false,
+                          smoothScrolling: true,
+                      }}
+                    />
+                ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         <p>Select a file to begin editing or create a new one.</p>
                     </div>

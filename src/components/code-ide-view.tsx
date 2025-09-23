@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Script from "next/script";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
@@ -127,7 +126,15 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [settings, setSettings] = usePersistentState<IdeSettings | null>('ideSettings', null);
+  const [settings, setSettings] = usePersistentState<IdeSettings>('ideSettings', {
+    geminiApiKey: "",
+    theme: "vs-dark",
+    fontSize: 14,
+    tabSize: 4,
+    autoSave: true,
+    minimap: true,
+    wordWrap: true,
+  });
   const editorInstanceRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   
   const [fileContextMenu, setFileContextMenu] = useState<{ x: number; y: number; path: string } | null>(null);
@@ -587,7 +594,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
   return (
     <>
-      <Script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js" />
       <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
       <NewProjectModal isOpen={newProjectModalOpen} onClose={() => setNewProjectModalOpen(false)} />
       <SettingsModal 
