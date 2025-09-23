@@ -36,7 +36,7 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
           const parsed = JSON.parse(storedValue);
           // Ensure openFolders is always an array
           if (key.includes('openFolders') && !Array.isArray(parsed)) {
-            setState(Array.isArray(defaultValue) ? defaultValue : []);
+            setState(Array.isArray(defaultValue) ? defaultValue : ([] as any));
           } else {
             setState(parsed);
           }
@@ -55,7 +55,7 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
       if (typeof window !== 'undefined') {
         localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    } catch (error) => {
+    } catch (error) {
       console.error(`Error saving state for key "${key}":`, error);
     }
   };
