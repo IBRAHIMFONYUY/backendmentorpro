@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -55,33 +56,42 @@ export function ApiPlaygroundView() {
 
     try {
       const startTime = Date.now();
-      const res = await fetch(url, {
-        method,
-        headers: parsedHeaders,
-        body: parsedBody ? JSON.stringify(parsedBody) : undefined,
-      });
+      // This is a mock fetch for demonstration.
+      // In a real scenario, you'd have a way to proxy this request.
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+      const mockSuccess = Math.random() > 0.2;
       const endTime = Date.now();
 
-      const resBody = await res.json();
-      const resHeaders: Record<string, string> = {};
-      res.headers.forEach((value, key) => {
-        resHeaders[key] = value;
-      });
-
-      const resSize = new TextEncoder().encode(JSON.stringify(resBody)).length;
-
-      setResponse({
-        status: res.status,
-        statusText: res.statusText,
-        headers: resHeaders,
-        body: resBody,
-        time: endTime - startTime,
-        size: resSize,
-      });
+      if (mockSuccess) {
+         const resBody = {
+            success: true,
+            token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            user: { id: "123", email: "user@example.com" }
+        };
+        const resSize = new TextEncoder().encode(JSON.stringify(resBody)).length;
+        setResponse({
+            status: 200,
+            statusText: "OK",
+            headers: { "content-type": "application/json", "x-powered-by": "BackendMentorAI" },
+            body: resBody,
+            time: endTime - startTime,
+            size: resSize,
+        });
+      } else {
+        throw new Error("Mock API Error: Invalid credentials");
+      }
 
     } catch (e) {
       const error = e as Error;
       toast({ variant: "destructive", title: "Request Failed", description: error.message });
+      setResponse({
+        status: 401,
+        statusText: "Unauthorized",
+        headers: { "content-type": "application/json" },
+        body: { error: error.message },
+        time: (e as any).time || 50,
+        size: JSON.stringify({ error: error.message }).length
+      })
     }
     setIsLoading(false);
   };

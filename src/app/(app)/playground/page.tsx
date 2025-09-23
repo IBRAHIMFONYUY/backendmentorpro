@@ -1,4 +1,5 @@
 
+
 import { CodeIdeView } from "@/components/code-ide-view";
 import { challenges } from "@/lib/data";
 
@@ -7,19 +8,9 @@ export default function ApiPlaygroundPage() {
     const defaultChallenge = challenges[0];
 
     return (
-        <>
-            <div className="space-y-1 mb-6">
-                <h1 className="text-3xl font-bold tracking-tight">Code Editor</h1>
-                <p className="text-muted-foreground">
-                    A full-featured IDE to build, test, and debug your applications.
-                </p>
-            </div>
-            <div className="h-[calc(100vh-12rem)]">
-              <CodeIdeView challenge={defaultChallenge} />
-            </div>
-        </>
+        <div className="h-[calc(100vh-10rem)] -m-8">
+            <CodeIdeView challenge={defaultChallenge} />
+        </div>
     );
 }
-
-
     

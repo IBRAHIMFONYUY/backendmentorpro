@@ -237,7 +237,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                           <TabsContent value="output">
                             <pre className="text-sm whitespace-pre-wrap font-mono text-muted-foreground">{runOutput}</pre>
                           </TabsContent>
-                          <TabsContent value="api" className="h-full">
+                          <TabsContent value="api" className="h-[500px]">
                             <ApiPlaygroundView />
                           </TabsContent>
                           <TabsContent value="ai-mentor">
@@ -283,6 +283,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
-
-    
