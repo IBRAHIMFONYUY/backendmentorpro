@@ -96,7 +96,7 @@ export default function AiCodeReviewerPage() {
                                 className="h-24"
                             />
                         </div>
-                         <div className="flex-1 min-h-[300px]">
+                         <div className="h-[400px]">
                             <label className="block text-sm font-medium mb-2">Code Snippet</label>
                             <MonacoEditor
                                 height="100%"
@@ -113,7 +113,7 @@ export default function AiCodeReviewerPage() {
                             />
                         </div>
 
-                        <Button onClick={handleReviewCode} disabled={isLoading} size="lg" className="w-full btn-primary-gradient mt-4">
+                        <Button onClick={handleReviewCode} disabled={isLoading} size="lg" className="w-full btn-primary-gradient mt-auto">
                             {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
                             Review My Code
                         </Button>
@@ -172,5 +172,3 @@ export default function AiCodeReviewerPage() {
         </div>
     );
 }
-
-    
