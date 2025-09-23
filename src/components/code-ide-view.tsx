@@ -23,6 +23,7 @@ import { RenameNodeModal } from "./ide/rename-node-modal";
 import { Ban, ClipboardPaste, Copy, CopyPlus, Edit, FileCog, FilePlus2, Folder, Play, Scissors, Search, Trash2 } from "lucide-react";
 import type { editor } from "monaco-editor";
 import { languageMap } from "./ide/editor-panel";
+import { reviewChallengeSubmission } from "@/ai/flows/review-challenge-submission";
 
 const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | ((prevState: T) => T)) => void] => {
   const [state, setState] = useState<T>(() => {
@@ -194,27 +195,54 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     toast({ title: "Execution Finished", description: "Check the output panel." });
   };
 
+  const serializeFileSystem = (node: FileSystemNode, indent = ''): string => {
+    let result = `${indent}${node.name}${node.type === 'folder' ? '/' : ''}\n`;
+    if (node.type === 'file' && node.content) {
+      const contentIndent = indent + '  ';
+      result += "```\n" + node.content.split('\n').map(line => `${contentIndent}${line}`).join('\n') + "\n```\n";
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        result += serializeFileSystem(child, indent + '  ');
+      }
+    }
+    return result;
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     rightPanelRef.current?.submit();
-    toast({ title: "Submitting solution", description: "Running all test cases..." });
-
+    toast({ title: "Submitting solution", description: "AI is reviewing your code..." });
+    
     setTestResults(prev => prev.map(t => ({...t, status: 'running'})));
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const finalResults: TestResult[] = [
-      { name: "Basic server setup", status: 'passed', output: "Completed" },
-      { name: "JWT implementation", status: 'passed', output: "Completed" },
-      { name: "Login endpoint", status: 'passed', output: "Completed" },
-      { name: "Protected routes", status: 'passed', output: "Completed" },
-      { name: "Error handling", status: 'failed', output: "Missing error handling for expired tokens" },
-    ];
-    setTestResults(finalResults);
-    setIsSubmitting(false);
+    try {
+        const filesString = serializeFileSystem(files);
+        const result = await reviewChallengeSubmission({
+            challengeTitle: challenge.title,
+            challengeDescription: challenge.description,
+            files: filesString,
+        });
 
-    const passedCount = finalResults.filter(r => r.status === 'passed').length;
-    toast({ title: "Tests finished", description: `${passedCount} out of 5 tests passed.` });
+        setTestResults(result.results);
+
+        const passedCount = result.results.filter(r => r.status === 'passed').length;
+        if (result.overallStatus === 'passed') {
+            toast({ title: "Challenge Completed!", description: "Great job! All tests passed." });
+        } else {
+            toast({ 
+                variant: "destructive",
+                title: "Tests Failed", 
+                description: `${passedCount} out of ${result.results.length} tests passed. Check the test panel for details.` 
+            });
+        }
+    } catch (error) {
+        console.error("Submission failed", error);
+        toast({ variant: 'destructive', title: "Submission Error", description: "Could not get a response from the AI reviewer." });
+        setTestResults(initialTestResults);
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   const handleCodeChange = (newCode: string) => {
