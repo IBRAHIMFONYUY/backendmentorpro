@@ -5,10 +5,10 @@ import { challenges } from "@/lib/data";
 
 export default function ApiPlaygroundPage() {
     // Use a default challenge or the first one for the standalone IDE view
-    const defaultChallenge = challenges[0];
+    const defaultChallenge = challenges[2]; // Use API Rate Limiter challenge
 
     return (
-        <div className="h-[calc(100vh-5rem)] -m-8">
+        <div className="fixed inset-0 bg-background">
             <CodeIdeView challenge={defaultChallenge} />
         </div>
     );

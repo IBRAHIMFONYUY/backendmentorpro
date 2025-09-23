@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter, Source_Code_Pro } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const sourceCodePro = Source_Code_Pro({ subsets: ['latin'], variable: '--font-source-code-pro' });
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' });
 
 export const metadata: Metadata = {
   title: 'BackendMentorAI',
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${sourceCodePro.variable} font-sans antialiased bg-background`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background`}>
         <TooltipProvider>
           {children}
           <Toaster />

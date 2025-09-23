@@ -8,6 +8,8 @@ interface CodeEditorProps extends React.TextareaHTMLAttributes<HTMLTextAreaEleme
   value: string;
 }
 
+// This is a simplified textarea-based editor for now.
+// A full Monaco Editor integration would be more complex.
 export function CodeEditor({ value, onChange, className, ...props }: CodeEditorProps) {
   const [lineCount, setLineCount] = useState(1);
   const lineCounterRef = useRef<HTMLDivElement>(null);
@@ -15,7 +17,7 @@ export function CodeEditor({ value, onChange, className, ...props }: CodeEditorP
 
   useEffect(() => {
     const lines = value.split('\n').length;
-    setLineCount(lines);
+    setLineCount(lines > 0 ? lines : 1);
   }, [value]);
 
   const handleScroll = () => {
@@ -25,19 +27,17 @@ export function CodeEditor({ value, onChange, className, ...props }: CodeEditorP
   };
 
   return (
-    <div className="relative h-full w-full font-mono text-sm bg-background rounded-md border">
+    <div className={cn("relative h-full w-full font-mono text-sm bg-[#0d1117] rounded-md", className)}>
       <div
         ref={lineCounterRef}
-        className="absolute left-0 top-0 h-full w-12 select-none overflow-hidden bg-muted/30"
+        className="absolute left-0 top-0 h-full w-12 select-none overflow-hidden text-right pr-4 pt-2 text-gray-500"
         aria-hidden="true"
       >
-        <div className="flex flex-col items-end pr-2 pt-3 text-right text-muted-foreground">
           {Array.from({ length: lineCount }, (_, i) => (
-            <span key={i} className="block leading-6">
+            <div key={i} className="h-[1.5em]">
               {i + 1}
-            </span>
+            </div>
           ))}
-        </div>
       </div>
       <Textarea
         ref={textareaRef}
@@ -46,9 +46,10 @@ export function CodeEditor({ value, onChange, className, ...props }: CodeEditorP
         onScroll={handleScroll}
         className={cn(
           "h-full w-full resize-none border-0 bg-transparent pl-14 font-mono !ring-0 focus:!ring-0 focus-visible:!ring-0",
-          "leading-6", // Ensure line height matches line numbers
+          "leading-[1.5em]", // Ensure line height matches line numbers
           className
         )}
+        spellCheck="false"
         {...props}
       />
     </div>

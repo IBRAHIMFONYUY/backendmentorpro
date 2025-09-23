@@ -20,7 +20,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)", ...fontFamily.sans],
-        mono: ["var(--font-source-code-pro)", ...fontFamily.mono],
+        mono: ["var(--font-jetbrains-mono)", ...fontFamily.mono],
       },
       colors: {
         border: "hsl(var(--border))",
