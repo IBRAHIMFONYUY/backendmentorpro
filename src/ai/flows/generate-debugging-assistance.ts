@@ -26,9 +26,8 @@ const GenerateDebuggingAssistanceInputSchema = z.object({
 export type GenerateDebuggingAssistanceInput = z.infer<typeof GenerateDebuggingAssistanceInputSchema>;
 
 const GenerateDebuggingAssistanceOutputSchema = z.object({
-  errorIdentification: z.string().describe('Identified errors in the code.'),
-  suggestedFixes: z.string().describe('Suggested fixes for the identified errors.'),
-  rootCauseExplanation: z.string().describe('Explanation of the root causes of the errors.'),
+  hasError: z.boolean().describe('Set to true if an error was found, otherwise false.'),
+  output: z.string().describe('The predicted standard output of the code. If the code has errors that would prevent execution or print to stderr, this field should describe the error and its cause.'),
 });
 export type GenerateDebuggingAssistanceOutput = z.infer<typeof GenerateDebuggingAssistanceOutputSchema>;
 
@@ -42,16 +41,17 @@ const prompt = ai.definePrompt({
   name: 'generateDebuggingAssistancePrompt',
   input: {schema: GenerateDebuggingAssistanceInputSchema},
   output: {schema: GenerateDebuggingAssistanceOutputSchema},
-  prompt: `You are an AI mentor assisting a developer with debugging their code.
+  prompt: `You are an AI code compiler and interpreter. Your task is to analyze a snippet of code and predict its output as if you were running it.
 
-  Your task is to analyze the code, identify errors, suggest fixes, and explain the root causes.
-  Consider the programming language and any provided description of the problem.
+  - If the code is valid and would execute without errors, set 'hasError' to false and provide the exact standard output in the 'output' field.
+  - If the code contains syntax errors, runtime errors, or logical issues that would cause it to fail or produce an error message, set 'hasError' to true. In the 'output' field, provide a concise error message, identify the problematic line, and give a brief explanation of the root cause, just like a real compiler or interpreter would. Do not suggest fixes unless it is part of the root cause explanation.
 
   Programming Language: {{{language}}}
-  Code: {{{code}}}
+  Code:
+  \`\`\`{{{language}}}
+  {{{code}}}
+  \`\`\`
   Description: {{{description}}}
-
-  Provide your analysis in a structured format, covering error identification, suggested fixes, and root cause explanation.
 `,
 });
 

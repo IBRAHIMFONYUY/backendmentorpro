@@ -56,17 +56,16 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
         handleTerminalCommand(command, true);
       },
       async runWithAIDebugger(code: string, language: string) {
-        setTerminalOutput(prev => [...prev, { type: 'output', content: `Simulating execution of ${language} code with AI debugger...`}]);
+        setTerminalOutput(prev => [...prev, { type: 'output', content: `[AI Runner] Simulating execution of ${language} code...`}]);
         try {
             const result = await generateDebuggingAssistance({ code, language });
-            const output: TerminalLine[] = [];
-            output.push({ type: 'ai', content: `[AI Analysis] for ${language} code:` });
-            output.push({ type: 'ai', content: `&nbsp;> Error Identification: ${result.errorIdentification}` });
-            output.push({ type: 'ai', content: `&nbsp;> Suggested Fixes: ${result.suggestedFixes.replace(/\n/g, '<br>&nbsp;&nbsp;')}`});
-            output.push({ type: 'ai', content: `&nbsp;> Root Cause: ${result.rootCauseExplanation}` });
-            setTerminalOutput(prev => [...prev, ...output]);
+            const outputLine: TerminalLine = {
+                type: result.hasError ? 'error' : 'output',
+                content: result.output.replace(/\n/g, '<br/>')
+            };
+            setTerminalOutput(prev => [...prev, outputLine]);
         } catch(e) {
-            setTerminalOutput(prev => [...prev, { type: 'error', content: 'AI debugger failed to analyze the code.'}]);
+            setTerminalOutput(prev => [...prev, { type: 'error', content: 'AI runner failed to analyze the code.'}]);
         }
       }
     }));
