@@ -5,11 +5,19 @@ import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Bell, Flame, Menu, Search, Star } from 'lucide-react';
+import { Bell, Flame, Menu, Search, Star, CheckCircle, Code } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const notifications = [
+    { icon: <CheckCircle className="text-green-500" />, text: "You completed the 'Two Sum' challenge.", time: "5m ago" },
+    { icon: <Star className="text-yellow-500" />, text: "You earned 150 XP.", time: "1h ago" },
+    { icon: <Code className="text-blue-500" />, text: "A new 'API Rate Limiter' challenge is available.", time: "3h ago" },
+  ]
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -28,7 +36,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 glass-effect border-r-0">
-                  <SheetTitle className="sr-only">Menu</SheetTitle>
+                  <SheetTitle>
+                    <span className="sr-only">Menu</span>
+                  </SheetTitle>
                   <MainNav />
               </SheetContent>
             </Sheet>
@@ -54,10 +64,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="text-sm text-muted-foreground">XP</span>
             </div>
             
-            <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-primary" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center text-xs font-bold text-white">3</span>
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5 text-primary" />
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center text-xs font-bold text-white">3</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4">
+                    <h4 className="font-medium text-foreground">Notifications</h4>
+                </div>
+                <Separator />
+                <div className="p-2 space-y-1">
+                  {notifications.map((notification, index) => (
+                    <div key={index} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50">
+                        {notification.icon}
+                        <div className="flex-1">
+                            <p className="text-sm text-foreground">{notification.text}</p>
+                            <p className="text-xs text-muted-foreground">{notification.time}</p>
+                        </div>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
             <UserNav />
           </div>
         </header>

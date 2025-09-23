@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Separator } from "./ui/separator";
+import { ScrollArea } from "./ui/scroll-area";
 
 const mainNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -67,33 +68,39 @@ export function MainNav() {
   }
 
   return (
-    <div className="flex h-full flex-col p-4">
-       <div className="flex items-center gap-3 px-2 pb-6">
+    <div className="flex h-full flex-col">
+       <div className="flex items-center gap-3 p-4 px-4 pb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center">
             <Code className="text-white text-lg" />
         </div>
         <span className="text-xl font-bold gradient-text">BackendMentorAI</span>
       </div>
 
-      <nav className="flex-grow space-y-1">
-        {renderNavItems(mainNavItems)}
-      </nav>
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          <nav className="space-y-1">
+            {renderNavItems(mainNavItems)}
+          </nav>
 
-      <div className="flex-grow space-y-4">
-        <Separator className="my-4" />
-        <NavHeader>AI Tools</NavHeader>
-        <div className="space-y-1">
-            {renderNavItems(aiToolsNavItems)}
+          <Separator />
+
+          <div>
+            <NavHeader>AI Tools</NavHeader>
+            <nav className="space-y-1 mt-2">
+                {renderNavItems(aiToolsNavItems)}
+            </nav>
+          </div>
+
+          <Separator />
+          
+          <div>
+            <NavHeader>Profile</NavHeader>
+            <nav className="space-y-1 mt-2">
+                {renderNavItems(userNavItems)}
+            </nav>
+          </div>
         </div>
-      </div>
-      
-      <div className="space-y-4">
-        <Separator className="my-4" />
-        <NavHeader>Profile</NavHeader>
-        <div className="space-y-1">
-            {renderNavItems(userNavItems)}
-        </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }
