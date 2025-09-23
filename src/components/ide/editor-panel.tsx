@@ -1,9 +1,10 @@
 
 import React, { useEffect, useRef } from "react";
 import type { FileSystemNode } from "@/lib/ide-data";
-import { File, FileJson, FileText, X, Code, Braces } from "lucide-react";
+import { X } from "lucide-react";
 import type { editor } from "monaco-editor";
 import { IdeSettings } from "./settings-modal";
+import { getFileIcon } from "@/lib/ide-utils";
 
 interface EditorPanelProps {
     openTabs: string[];
@@ -116,31 +117,6 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
             });
         }
     };
-
-
-    const getFileIcon = (filename: string) => {
-        const ext = filename.split('.').pop();
-        switch (ext) {
-            case 'js':
-            case 'jsx':
-                return <FileJson className="h-4 w-4 text-yellow-400" />;
-            case 'ts':
-            case 'tsx':
-                return <FileJson className="h-4 w-4 text-blue-400" />;
-            case 'json':
-                return <Braces className="h-4 w-4 text-green-400" />;
-            case 'md':
-                return <FileText className="h-4 w-4 text-blue-300" />;
-            case 'html':
-                return <Code className="h-4 w-4 text-orange-400" />;
-            case 'css':
-                 return <FileText className="h-4 w-4 text-sky-400" />;
-            case 'py':
-                 return <FileJson className="h-4 w-4 text-green-500" />;
-            default:
-                return <File className="h-4 w-4 text-muted-foreground" />;
-        }
-    }
 
     return (
         <>

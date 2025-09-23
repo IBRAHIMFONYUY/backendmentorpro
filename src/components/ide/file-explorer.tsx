@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus2, ChevronsRightLeft, Rows, Columns, Code, Braces } from 'lucide-react';
+import { CheckCircle, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus2, Columns, Rows } from 'lucide-react';
 import type { FileSystemNode, TestResult } from '@/lib/ide-data';
 import { cn } from '@/lib/utils';
+import { getFileIcon } from '@/lib/ide-utils';
 
 interface FileExplorerProps {
     files: FileSystemNode;
@@ -41,30 +42,6 @@ export function FileExplorer({
     const totalTests = testResults.length;
     const progressValue = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
-    const getFileIcon = (filename: string) => {
-        const ext = filename.split('.').pop();
-        switch (ext) {
-            case 'js':
-            case 'jsx':
-                return <FileJson className="h-4 w-4 text-yellow-400 shrink-0" />;
-            case 'ts':
-            case 'tsx':
-                return <FileJson className="h-4 w-4 text-blue-400 shrink-0" />;
-            case 'json':
-                return <Braces className="h-4 w-4 text-green-400 shrink-0" />;
-            case 'md':
-                return <FileText className="h-4 w-4 text-blue-300 shrink-0" />;
-            case 'html':
-                return <Code className="h-4 w-4 text-orange-400 shrink-0" />;
-            case 'css':
-                 return <FileText className="h-4 w-4 text-sky-400 shrink-0" />;
-            case 'py':
-                 return <FileJson className="h-4 w-4 text-green-500 shrink-0" />;
-            default:
-                return <File className="h-4 w-4 text-muted-foreground shrink-0" />;
-        }
-    }
-
     const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
         const isSelected = selectedFolder === node.path;
         
@@ -84,7 +61,7 @@ export function FileExplorer({
                     }}
                     onContextMenu={(e) => onContextMenu(e, node.path)}
                 >
-                    {isOpen ? <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" /> : <Folder className="h-4 w-4 text-blue-400 shrink-0" />}
+                    {isOpen ? <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" /> : getFileIcon(node.name, true, isOpen)}
                     <span className="truncate">{node.name || '/'}</span>
                 </div>
                 {isOpen && node.children && (
@@ -154,5 +131,3 @@ export function FileExplorer({
         </div>
     );
 }
-
-    
