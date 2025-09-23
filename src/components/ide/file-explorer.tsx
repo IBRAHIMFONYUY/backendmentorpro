@@ -19,6 +19,7 @@ interface FileExplorerProps {
     openFolders: Set<string>;
     toggleFolder: (path: string) => void;
     selectedFolder: string;
+    onContextMenu: (e: React.MouseEvent, path: string) => void;
 }
 
 export function FileExplorer({ 
@@ -34,6 +35,7 @@ export function FileExplorer({
     openFolders,
     toggleFolder,
     selectedFolder,
+    onContextMenu,
 }: FileExplorerProps) {
     const passedTests = testResults.filter(r => r.status === 'passed').length;
     const totalTests = testResults.length;
@@ -63,6 +65,7 @@ export function FileExplorer({
                         e.stopPropagation();
                         onFileSelect(node.path);
                     }}
+                    onContextMenu={(e) => onContextMenu(e, node.path)}
                 >
                     {isOpen ? <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" /> : <Folder className="h-4 w-4 text-blue-400 shrink-0" />}
                     <span className="truncate">{node.name || '/'}</span>
@@ -88,6 +91,7 @@ export function FileExplorer({
                     e.stopPropagation();
                     onFileSelect(node.path);
                 }}
+                onContextMenu={(e) => onContextMenu(e, node.path)}
             >
                 {getFileIcon(node.name)}
                 <span className="truncate">{node.name}</span>

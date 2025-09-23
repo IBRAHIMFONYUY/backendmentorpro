@@ -18,6 +18,9 @@ import { SettingsModal, type IdeSettings } from "./ide/settings-modal";
 import { CommandPalette } from "./ide/command-palette";
 import { CreateFileModal } from "./ide/create-file-modal";
 import { CreateFolderModal } from "./ide/create-folder-modal";
+import { ContextMenu } from "./ide/context-menu";
+import { RenameNodeModal } from "./ide/rename-node-modal";
+import { Copy, CopyPlus, Edit, Files, Folder, Paste, Trash2 } from "lucide-react";
 
 
 const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
@@ -87,6 +90,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [settings, setSettings] = useState<IdeSettings | null>(null);
   
+  // Context Menu State
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string } | null>(null);
+  const [clipboard, setClipboard] = useState<{ path: string; operation: 'copy' | 'cut' } | null>(null);
+  const [renameModal, setRenameModal] = useState<{ path: string; name: string, type: 'file' | 'folder' } | null>(null);
+
   const { toast } = useToast();
   
   const activeFileContent = findNode(activeTab, files)?.content ?? '';
@@ -187,6 +195,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
   
   useEffect(() => {
+    const handleGlobalClick = () => setContextMenu(null);
+    window.addEventListener('click', handleGlobalClick);
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
@@ -199,7 +210,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const onSettingsChange = (newSettings: IdeSettings) => {
@@ -267,6 +281,143 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       });
   };
 
+  const onContextMenu = (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, path });
+  };
+
+  // --- Context Menu Actions ---
+    const deleteNode = (path: string) => {
+        const deleteRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode | null => {
+            if (node.path === targetPath) {
+                return null;
+            }
+            if (node.children) {
+                const newChildren = node.children
+                    .map(child => deleteRecursively(child, targetPath))
+                    .filter(Boolean) as FileSystemNode[];
+                return { ...node, children: newChildren };
+            }
+            return node;
+        };
+        setFiles(prevFiles => deleteRecursively(prevFiles, path)!);
+        setOpenTabs(prev => prev.filter(t => !t.startsWith(path)));
+        if (activeTab.startsWith(path)) {
+            setActiveTab(openTabs[0] || '');
+        }
+        toast({ title: `Deleted "${path}"` });
+    };
+
+    const renameNode = (oldPath: string, newName: string) => {
+        if (!newName || newName.includes('/')) {
+            toast({ variant: 'destructive', title: "Invalid Name" });
+            return;
+        }
+
+        const renameRecursively = (node: FileSystemNode, targetPath: string, newName: string): FileSystemNode => {
+            if (node.path === targetPath) {
+                const newPath = targetPath.substring(0, targetPath.lastIndexOf('/') + 1) + newName;
+                return { ...node, name: newName, path: newPath }; // simplified path update
+            }
+            if (node.children) {
+                return { ...node, children: node.children.map(child => renameRecursively(child, targetPath, newName)) };
+            }
+            return node;
+        };
+
+        setFiles(prevFiles => renameRecursively(prevFiles, oldPath, newName));
+        setRenameModal(null);
+        toast({ title: `Renamed to "${newName}"` });
+    };
+    
+    const duplicateNode = (path: string) => {
+        const nodeToCopy = findNode(path, files);
+        if (!nodeToCopy) return;
+
+        let newName;
+        const parts = nodeToCopy.name.split('.');
+        if (parts.length > 1) {
+            const ext = parts.pop();
+            newName = `${parts.join('.')}-copy.${ext}`;
+        } else {
+            newName = `${nodeToCopy.name}-copy`;
+        }
+        
+        const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+        const newPath = parentPath === '/' ? `/${newName}` : `${parentPath}/${newName}`;
+
+        const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
+            if (node.path === targetPath) {
+                return { ...node, children: [...(node.children || []), newNode] };
+            }
+             if (node.children) {
+                return { ...node, children: node.children.map(child => addRecursively(child, targetPath, newNode)) };
+            }
+            return node;
+        };
+        
+        const newNode = { ...nodeToCopy, name: newName, path: newPath };
+        setFiles(prevFiles => addRecursively(prevFiles, parentPath, newNode));
+        toast({ title: `Duplicated to "${newName}"` });
+    };
+
+    const handlePaste = (destinationPath: string) => {
+        if (!clipboard) {
+            toast({ variant: 'destructive', title: "Clipboard is empty" });
+            return;
+        }
+
+        const nodeToPaste = findNode(clipboard.path, files);
+        if (!nodeToPaste) return;
+
+        const newName = nodeToPaste.name;
+        const newPath = `${destinationPath === '/' ? '' : destinationPath}/${newName}`;
+        
+        // Simplified paste: just copy
+        const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
+            if (node.path === targetPath) {
+                if (node.children?.find(c => c.name === newNode.name)) {
+                     toast({ variant: 'destructive', title: "A file with that name already exists." });
+                     return node; // abort
+                }
+                return { ...node, children: [...(node.children || []), newNode] };
+            }
+             if (node.children) {
+                return { ...node, children: node.children.map(child => addRecursively(child, targetPath, newNode)) };
+            }
+            return node;
+        };
+
+        const newNode = { ...nodeToPaste, path: newPath };
+        setFiles(prevFiles => addRecursively(prevFiles, destinationPath, newNode));
+        toast({ title: `Pasted "${newName}"` });
+
+        if (clipboard.operation === 'cut') {
+            deleteNode(clipboard.path);
+        }
+        setClipboard(null);
+    };
+
+    const getContextMenuItems = (): any[] => {
+        if (!contextMenu) return [];
+        const node = findNode(contextMenu.path, files);
+        if (!node) return [];
+
+        const isFolder = node.type === 'folder';
+
+        return [
+            { label: "New File", icon: <FilePlus/>, action: () => setCreateFileModalOpen(true), separator: true, disabled: !isFolder },
+            { label: "New Folder", icon: <Folder/>, action: () => setCreateFolderModalOpen(true), disabled: !isFolder },
+            { label: "Copy", icon: <Copy />, action: () => setClipboard({ path: contextMenu.path, operation: 'copy' }) },
+            { label: "Paste", icon: <Paste />, action: () => handlePaste(isFolder ? contextMenu.path : (contextMenu.path.substring(0, contextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard },
+            { label: "Duplicate", icon: <CopyPlus />, action: () => duplicateNode(contextMenu.path), separator: true },
+            { label: "Rename", icon: <Edit />, action: () => setRenameModal({ path: node.path, name: node.name, type: node.type }) },
+            { label: "Delete", icon: <Trash2 />, action: () => deleteNode(contextMenu.path), separator: true, },
+        ];
+    };
+
+
   return (
     <>
       <Script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js" />
@@ -280,9 +431,19 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
       <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} basePath={selectedFolder} />
       <CreateFolderModal isOpen={createFolderModalOpen} onClose={() => setCreateFolderModalOpen(false)} onCreate={handleCreateFolder} basePath={selectedFolder} />
+       {renameModal && (
+        <RenameNodeModal
+          isOpen={!!renameModal}
+          onClose={() => setRenameModal(null)}
+          onRename={(newName) => renameNode(renameModal.path, newName)}
+          currentNodeName={renameModal.name}
+          nodeType={renameModal.type}
+        />
+      )}
+      {contextMenu && <ContextMenu x={contextMenu.x} y={contextMenu.y} items={getContextMenuItems()} onClose={() => setContextMenu(null)} />}
 
 
-      <div className="h-screen w-screen flex flex-col bg-background ide-body">
+      <div className="h-screen w-screen flex flex-col bg-background ide-body" onClick={() => setContextMenu(null)} onContextMenu={(e) => onContextMenu(e, '/')}>
         <IdeTopBar 
           challenge={challenge}
           onNewProject={() => setNewProjectModalOpen(true)}
@@ -318,6 +479,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       openFolders={openFolders}
                       toggleFolder={toggleFolder}
                       selectedFolder={selectedFolder}
+                      onContextMenu={onContextMenu}
                   />
               </ResizablePanel>
               <ResizableHandle withHandle className="hidden md:flex"/>
