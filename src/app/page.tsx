@@ -70,7 +70,7 @@ export default function Home() {
             }, 16);
         }
 
-        toast({ title: 'Loading real-time statistics...', description: "" });
+        toast({ title: <div className="flex items-center gap-2"><ChartLine/> Loading real-time statistics...</div> });
         setTimeout(() => {
             animateCounter('developerCount', 52847);
             animateCounter('challengeCount', 247);
@@ -85,26 +85,26 @@ export default function Home() {
     };
 
     const handleOAuth = (provider: string) => {
-        toast({ title: `Redirecting to ${provider} OAuth...` });
+        toast({ title: <div className="flex items-center gap-2">{provider === 'GitHub' ? <FaGithub/> : <FaGoogle/>} Redirecting to {provider} OAuth...</div> });
         setTimeout(() => {
-            toast({ title: `${provider} authentication successful!` });
+            toast({ title: <div className="flex items-center gap-2"><CheckCircle/>{provider} authentication successful!</div> });
             setOnboardingStep(true);
         }, 2000);
     };
 
     const handleEmailSignup = () => {
-        toast({ title: 'Creating your account...' });
+        toast({ title: <div className="flex items-center gap-2"><Users/>Creating your account...</div> });
         setTimeout(() => {
-            toast({ title: 'Account created successfully!' });
+            toast({ title: <div className="flex items-center gap-2"><CheckCircle/>Account created successfully!</div> });
             setOnboardingStep(true);
         }, 1500);
     };
 
     const handleCompleteOnboarding = () => {
-        toast({ title: 'Welcome! Starting your journey.' });
+        toast({ title: <div className="flex items-center gap-2"><Rocket/>Welcome! Starting your journey.</div> });
         setAuthModalOpen(false);
         setTimeout(() => {
-            toast({ title: 'Personalizing your dashboard...' });
+            toast({ title: <div className="flex items-center gap-2"><Cog className="animate-spin" />Personalizing your dashboard...</div> });
              // Redirect to dashboard after a short delay
             setTimeout(() => {
                 window.location.href = '/dashboard';
@@ -123,13 +123,13 @@ export default function Home() {
 
     const handleSendApiRequest = async () => {
         if (!apiUrl) {
-            toast({ variant: 'destructive', title: 'Please enter an API endpoint' });
+            toast({ variant: 'destructive', title: <div className="flex items-center gap-2"><Bug/>Please enter an API endpoint</div> });
             return;
         }
 
         setIsApiLoading(true);
         setApiResponse(null);
-        toast({ title: 'Sending API request...' });
+        toast({ title: <div className="flex items-center gap-2"><Send/>Sending API request...</div> });
 
         const startTime = Date.now();
         try {
@@ -156,7 +156,7 @@ export default function Home() {
                 time: endTime - startTime,
                 body: data
             });
-            toast({ title: `API request completed (${res.status})` });
+            toast({ title: <div className="flex items-center gap-2"><CheckCircle/>API request completed ({res.status})</div> });
 
         } catch (error: any) {
             const endTime = Date.now();
@@ -166,7 +166,7 @@ export default function Home() {
                 time: endTime - startTime,
                 body: { error: error.message }
             });
-            toast({ variant: 'destructive', title: 'API request failed', description: error.message });
+            toast({ variant: 'destructive', title: <div className="flex items-center gap-2"><Bug/>API request failed</div>, description: error.message });
         }
         setIsApiLoading(false);
     };
@@ -175,7 +175,7 @@ export default function Home() {
         setApiUrl('https://jsonplaceholder.typicode.com/posts');
         setApiRequestBody('{"title": "Test Post", "body": "This is a test", "userId": 1}');
         setApiResponse(null);
-        toast({ title: 'Cleared API playground' });
+        toast({ title: <div className="flex items-center gap-2"><Trash/>Cleared API playground</div> });
     }
 
   if (isLoading) {
@@ -301,9 +301,9 @@ export default function Home() {
                                 </div>
                                 <div className="p-4 bg-dark-surface border-t border-dark-border flex justify-between items-center">
                                     <div className="flex space-x-3">
-                                        <Button onClick={() => toast({ title: 'Code execution simulated!' })} className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center space-x-2"><Play className="h-4 w-4" /><span>Run Code</span></Button>
+                                        <Button onClick={() => toast({ title: <div className="flex items-center gap-2"><Play/>Code execution simulated!</div> })} className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center space-x-2"><Play className="h-4 w-4" /><span>Run Code</span></Button>
                                         <Button onClick={() => setAiModalOpen(true)} className="px-4 py-2 bg-accent-purple text-white rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center space-x-2"><Bot className="h-4 w-4" /><span>AI Help</span></Button>
-                                        <Button onClick={() => { navigator.clipboard.writeText('https://backendmentor.dev/share/xyz'); toast({ title: 'Share link copied!' })}} className="px-4 py-2 bg-accent-blue text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center space-x-2"><Share className="h-4 w-4" /><span>Share</span></Button>
+                                        <Button onClick={() => { navigator.clipboard.writeText('https://backendmentor.dev/share/xyz'); toast({ title: <div className="flex items-center gap-2"><Share/>Share link copied!</div> })}} className="px-4 py-2 bg-accent-blue text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center space-x-2"><Share className="h-4 w-4" /><span>Share</span></Button>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm text-gray-400">
                                         <CheckCircle className="text-accent-green h-4 w-4" /><span>Tests: 12/12</span>
@@ -337,7 +337,7 @@ export default function Home() {
                         <h3 className="text-2xl font-bold mb-4">Live Coding Environment</h3>
                         <p className="text-gray-300 mb-6 leading-relaxed">Monaco Editor with IntelliSense, syntax highlighting, real-time collaboration, instant code execution, and integrated debugging tools.</p>
                         <div className="flex items-center justify-between">
-                            <Button onClick={() => toast({title: "Live editor coming soon!"})} className="px-6 py-3 bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red hover:text-white transition-all font-medium">Open Live Editor</Button>
+                            <Button onClick={() => toast({title: <div className="flex items-center gap-2"><Code/>Live editor coming soon!</div>})} className="px-6 py-3 bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red hover:text-white transition-all font-medium">Open Live Editor</Button>
                             <div className="flex items-center space-x-1 text-sm text-gray-400"><Users className="h-4 w-4" /><span>Real-time</span></div>
                         </div>
                     </div>
@@ -627,7 +627,7 @@ export default function Home() {
                     </div>
                 </div>
                 <div className="text-center">
-                    <Button onClick={() => toast({ title: 'Joining community...' })} className="px-8 py-4 btn-primary text-white rounded-xl font-semibold text-lg">
+                    <Button onClick={() => toast({ title: <div className="flex items-center gap-2"><Users /> Joining community...</div> })} className="px-8 py-4 btn-primary text-white rounded-xl font-semibold text-lg">
                         <Users className="mr-2 h-5 w-5" />Join Community
                     </Button>
                 </div>
@@ -714,3 +714,4 @@ export default function Home() {
     </div>
   );
 }
+, now enhance the buttons and links to be more interactive and add a gamified feel to them
