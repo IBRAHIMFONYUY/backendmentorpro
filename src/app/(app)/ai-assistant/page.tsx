@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bot, Loader2, Send, User, Paperclip, Mic, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Bot, Loader2, Send, User, Paperclip, Mic, Image as ImageIcon, StopCircle } from 'lucide-react';
 import { mentorChat } from '@/ai/flows/mentor-chat';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { speechToText } from '@/ai/flows/speech-to-text';
 
 interface Message {
   type: 'user' | 'ai';
@@ -24,6 +25,9 @@ export default function AiAssistantPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     // Auto-scroll to bottom
@@ -35,12 +39,12 @@ export default function AiAssistantPage() {
     }
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSendMessage = async (messageText?: string) => {
+    const currentInput = typeof messageText === 'string' ? messageText : input;
+    if (!currentInput.trim() || isLoading) return;
 
-    const userMessage: Message = { type: 'user', text: input };
+    const userMessage: Message = { type: 'user', text: currentInput };
     setMessages((prev) => [...prev, userMessage]);
-    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
@@ -64,6 +68,69 @@ export default function AiAssistantPage() {
       setIsLoading(false);
     }
   };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result as string;
+          setIsLoading(true);
+          toast({ title: 'Transcribing audio...' });
+          try {
+            const {text} = await speechToText({audioDataUri: base64Audio});
+            if (text) {
+              await handleSendMessage(text);
+            } else {
+              toast({ variant: 'destructive', title: 'Transcription failed. Please try again.' });
+            }
+          } catch(e) {
+            toast({ variant: 'destructive', title: 'Error transcribing audio.' });
+            console.error(e);
+          } finally {
+             setIsLoading(false);
+          }
+        };
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      toast({ title: 'Recording started...' });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Microphone access denied',
+        description: 'Please enable microphone access in your browser settings.',
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast({ title: 'Recording stopped. Processing...' });
+    }
+  };
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-full">
@@ -124,24 +191,13 @@ export default function AiAssistantPage() {
         </ScrollArea>
       </div>
 
-      <div className="p-4 border-t">
-        <div className="relative max-w-4xl mx-auto">
-          <Input
-            id="aiInput"
-            type="text"
-            placeholder="Ask for advice, like 'How do I handle authentication in a microservices architecture?'"
-            className="pr-28 pl-14 h-14 bg-background/50 border-border rounded-xl text-base text-foreground focus:border-primary focus:outline-none"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            disabled={isLoading}
-          />
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex gap-1">
-            <Button
+       <div className="p-4 border-t">
+        <div className="max-w-4xl mx-auto bg-background/50 border border-border rounded-xl flex items-center">
+           <Button
               onClick={() => toast({ title: 'File uploads coming soon!' })}
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-primary"
+              className="text-muted-foreground hover:text-primary shrink-0"
             >
               <Paperclip />
             </Button>
@@ -149,29 +205,37 @@ export default function AiAssistantPage() {
               onClick={() => toast({ title: 'Image uploads coming soon!' })}
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-primary"
+              className="text-muted-foreground hover:text-primary shrink-0"
             >
               <ImageIcon />
             </Button>
-          </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-            <Button
-              onClick={() => toast({ title: 'Voice input coming soon!' })}
+          <Input
+            id="aiInput"
+            type="text"
+            placeholder="Ask for advice, like 'How do I handle authentication in a microservices architecture?'"
+            className="bg-transparent border-0 h-14 text-base text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            disabled={isLoading || isRecording}
+          />
+           <Button
+              onClick={handleMicClick}
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-primary"
+              className={`text-muted-foreground shrink-0 ${isRecording ? 'text-red-500 hover:text-red-600' : 'hover:text-primary'}`}
+              disabled={isLoading}
             >
-              <Mic />
+              {isRecording ? <StopCircle /> : <Mic />}
             </Button>
             <Button
               id="sendAiMessage"
-              className="btn-primary-gradient text-white rounded-lg w-10 h-10 p-0"
-              onClick={handleSendMessage}
-              disabled={isLoading || !input.trim()}
+              className="btn-primary-gradient text-white rounded-lg w-10 h-10 p-0 mr-2 shrink-0"
+              onClick={() => handleSendMessage()}
+              disabled={isLoading || !input.trim() || isRecording}
             >
               <Send className="h-5 w-5" />
             </Button>
-          </div>
         </div>
       </div>
     </div>

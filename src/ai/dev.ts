@@ -10,3 +10,4 @@ import '@/ai/flows/mentor-chat.ts';
 import '@/ai/flows/review-challenge-submission.ts';
 import '@/ai/flows/generate-project-ideas.ts';
 import '@/ai/flows/tech-advisor.ts';
+import '@/ai/flows/speech-to-text.ts';
