@@ -55,7 +55,7 @@ export function RecentChallenges() {
   }
 
   return (
-     <div className="glass-effect rounded-2xl p-6 animate-fade-in-up">
+     <div className="glass-effect rounded-2xl p-6 animate-fade-in-up card-hover">
         <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">Recommended for You</h2>
             <div className="flex space-x-1 bg-card p-1 rounded-lg">

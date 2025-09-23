@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <Card className="glass-effect animate-slide-in-left">
+                    <Card className="glass-effect animate-slide-in-left card-hover">
                         <CardHeader className="flex-row items-center justify-between">
                             <CardTitle className="text-2xl">Continue Learning</CardTitle>
                             <Button variant="ghost" size="icon">
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-8">
-                    <Card className="glass-effect animate-slide-in-right">
+                    <Card className="glass-effect animate-slide-in-right card-hover">
                       <CardHeader>
                         <CardTitle className="text-xl">Recent Activity</CardTitle>
                       </CardHeader>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                       </CardContent>
                     </Card>
 
-                     <Card className="glass-effect animate-slide-in-right">
+                     <Card className="glass-effect animate-slide-in-right card-hover">
                         <CardHeader>
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-xl">Latest Achievements</CardTitle>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="glass-effect animate-slide-in-right">
+                    <Card className="glass-effect animate-slide-in-right card-hover">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-xl">Weekly Leaderboard</CardTitle>
