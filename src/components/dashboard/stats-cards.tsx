@@ -28,8 +28,8 @@ export function StatsCards() {
       description: "Total number of coding challenges you have successfully completed.",
       details: (
         <div>
-          <p className="text-2xl font-bold">47</p>
-          <p className="text-xs text-green-400 flex items-center">
+          <p className="text-4xl font-bold">47</p>
+          <p className="text-sm text-green-400 flex items-center">
               <ArrowUp className="h-4 w-4 mr-1" />
               +3 this week
           </p>
@@ -43,13 +43,13 @@ export function StatsCards() {
       description: "Total time spent actively coding in the platform.",
       details: (
         <div>
-          <p className="text-2xl font-bold">23h</p>
-          <p className="text-xs text-green-400 flex items-center">
+          <p className="text-4xl font-bold">23h</p>
+          <p className="text-sm text-green-400 flex items-center">
               <ArrowUp className="h-4 w-4 mr-1" />
               +5h from last month
           </p>
            <p className="mt-4 text-muted-foreground">Consistent practice is key. Keep investing time to sharpen your skills.</p>
-           <div className="h-48 mt-4 -ml-4">
+           <div className="h-64 mt-4 -ml-4">
             <Overview />
            </div>
         </div>
@@ -61,8 +61,8 @@ export function StatsCards() {
       description: "Badges and milestones you have earned.",
       details: (
         <div>
-          <p className="text-2xl font-bold">12</p>
-          <p className="text-xs text-green-400 flex items-center">
+          <p className="text-4xl font-bold">12</p>
+          <p className="text-sm text-green-400 flex items-center">
             <Star className="h-4 w-4 mr-1" />
             2 new this week
           </p>
@@ -76,8 +76,8 @@ export function StatsCards() {
       description: "Your current position on the weekly leaderboard.",
       details: (
         <div>
-          <p className="text-2xl font-bold">#247</p>
-          <p className="text-xs text-green-400 flex items-center">
+          <p className="text-4xl font-bold">#247</p>
+          <p className="text-sm text-green-400 flex items-center">
               <ArrowUp className="h-4 w-4 mr-1" />
               +15 positions
           </p>
@@ -90,7 +90,7 @@ export function StatsCards() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-in-left">
-          <Card className="glass-effect card-hover" onClick={() => setModalContent(stats[0])}>
+          <Card className="glass-effect card-hover cursor-pointer" onClick={() => setModalContent(stats[0])}>
               <CardHeader className="flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Challenges Solved</CardTitle>
                   <Code className="text-primary" />
@@ -104,7 +104,7 @@ export function StatsCards() {
               </CardContent>
           </Card>
           
-          <Card className="glass-effect card-hover" onClick={() => setModalContent(stats[1])}>
+          <Card className="glass-effect card-hover cursor-pointer" onClick={() => setModalContent(stats[1])}>
                <CardHeader className="flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Coding Time</CardTitle>
                   <Clock className="text-secondary" />
@@ -118,7 +118,7 @@ export function StatsCards() {
               </CardContent>
           </Card>
           
-          <Card className="glass-effect card-hover" onClick={() => setModalContent(stats[2])}>
+          <Card className="glass-effect card-hover cursor-pointer" onClick={() => setModalContent(stats[2])}>
               <CardHeader className="flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Achievements</CardTitle>
                   <Trophy className="text-accent" />
@@ -132,7 +132,7 @@ export function StatsCards() {
               </CardContent>
           </Card>
           
-          <Card className="glass-effect card-hover" onClick={() => setModalContent(stats[3])}>
+          <Card className="glass-effect card-hover cursor-pointer" onClick={() => setModalContent(stats[3])}>
               <CardHeader className="flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Leaderboard Rank</CardTitle>
                   <Users className="text-yellow-400" />
@@ -151,15 +151,15 @@ export function StatsCards() {
         <Dialog open={!!modalContent} onOpenChange={(isOpen) => !isOpen && setModalContent(null)}>
           <DialogContent className="glass-effect">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
+              <DialogTitle className="flex items-center gap-3 text-2xl">
                 {modalContent.icon}
                 {modalContent.title}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="pt-2">
                 {modalContent.description}
               </DialogDescription>
             </DialogHeader>
-            <div>{modalContent.details}</div>
+            <div className="py-4">{modalContent.details}</div>
           </DialogContent>
         </Dialog>
       )}

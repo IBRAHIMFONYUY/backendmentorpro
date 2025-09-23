@@ -14,13 +14,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUpRight, Crown, Bot, Check, Clock, Code, ExternalLink, Flame, Star, Trophy, Users } from "lucide-react";
+import { ArrowUpRight, Crown, Bot, Check, Clock, Code, ExternalLink, Flame, Star, Trophy, Users, CheckCircle, BrainCircuit } from "lucide-react";
 import Image from "next/image";
 import { AiAssistantModal } from "@/components/ai-assistant-modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 export default function DashboardPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [continueModalOpen, setContinueModalOpen] = useState(false);
+  const [achievementsModalOpen, setAchievementsModalOpen] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,6 +37,7 @@ export default function DashboardPage() {
   }, []);
 
   const handleContinueChallenge = () => {
+    setContinueModalOpen(false);
     toast({
         title: 'Loading challenge environment...',
         description: 'Please wait a moment.',
@@ -52,6 +58,76 @@ export default function DashboardPage() {
     <>
       <WelcomeAssistant isOpen={showWelcome} onClose={() => setShowWelcome(false)} />
       <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
+      
+      {/* Continue Learning Modal */}
+      <Dialog open={continueModalOpen} onOpenChange={setContinueModalOpen}>
+        <DialogContent className="glass-effect max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-3"><BrainCircuit/> Continue: Build a REST API</DialogTitle>
+            <DialogDescription>You're 75% complete with this challenge. Ready to finish it?</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+              <p>This challenge focuses on creating a secure Node.js API with JWT authentication, user registration, and protected routes. You have completed 6 out of 8 tasks.</p>
+              <div className="space-y-2">
+                  <h4 className="font-semibold">Remaining Tasks:</h4>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                      <li>Implement refresh token rotation.</li>
+                      <li>Add comprehensive integration tests.</li>
+                  </ul>
+              </div>
+              <Separator />
+               <div className="flex justify-end gap-4">
+                  <Button variant="ghost" onClick={() => setContinueModalOpen(false)}>Review Later</Button>
+                  <Button onClick={handleContinueChallenge} className="btn-primary-gradient">
+                    Let's Go!
+                  </Button>
+               </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Achievements Modal */}
+      <Dialog open={achievementsModalOpen} onOpenChange={setAchievementsModalOpen}>
+        <DialogContent className="glass-effect">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-3"><Trophy/> All Achievements</DialogTitle>
+                <DialogDescription>A collection of all your earned badges and milestones.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-3 gap-6 py-4 text-center">
+                 <div className="space-y-2">
+                    <Trophy className="mx-auto text-yellow-400 h-12 w-12"/>
+                    <p className="text-sm font-medium">Security Expert</p>
+                    <p className="text-xs text-muted-foreground">Completed 5 security challenges.</p>
+                </div>
+                <div className="space-y-2">
+                    <Trophy className="mx-auto text-yellow-400 h-12 w-12"/>
+                    <p className="text-sm font-medium">DB Master</p>
+                    <p className="text-xs text-muted-foreground">Mastered SQL and NoSQL challenges.</p>
+                </div>
+                <div className="space-y-2">
+                    <Trophy className="mx-auto text-yellow-400 h-12 w-12"/>
+                    <p className="text-sm font-medium">Speed Demon</p>
+                    <p className="text-xs text-muted-foreground">Solved 3 challenges under 10 minutes.</p>
+                </div>
+                 <div className="space-y-2 opacity-50">
+                    <Trophy className="mx-auto h-12 w-12"/>
+                    <p className="text-sm font-medium">Microservice Maestro</p>
+                     <p className="text-xs text-muted-foreground">Deploy a full microservice architecture.</p>
+                </div>
+                 <div className="space-y-2 opacity-50">
+                    <Trophy className="mx-auto h-12 w-12"/>
+                    <p className="text-sm font-medium">10-Day Streak</p>
+                    <p className="text-xs text-muted-foreground">Code for 10 days in a row.</p>
+                </div>
+                 <div className="space-y-2 opacity-50">
+                    <Trophy className="mx-auto h-12 w-12"/>
+                    <p className="text-sm font-medium">Community Helper</p>
+                    <p className="text-xs text-muted-foreground">Help 5 other developers.</p>
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
+
 
        <div className="space-y-8">
             <div className="animate-fade-in-up">
@@ -77,7 +153,7 @@ export default function DashboardPage() {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <Card className="glass-effect animate-slide-in-left card-hover">
+                    <Card className="glass-effect animate-slide-in-left card-hover" onClick={() => setContinueModalOpen(true)}>
                         <CardHeader className="flex-row items-center justify-between">
                             <CardTitle className="text-2xl">Continue Learning</CardTitle>
                             <Button variant="ghost" size="icon">
@@ -112,7 +188,7 @@ export default function DashboardPage() {
                                         <span><Clock className="inline mr-1 h-4 w-4" /> 2h 30m left</span>
                                         <span><Check className="inline mr-1 h-4 w-4" /> 6/8 tasks</span>
                                     </div>
-                                    <Button onClick={handleContinueChallenge} className="btn-primary-gradient">
+                                    <Button onClick={() => setContinueModalOpen(true)} className="btn-primary-gradient">
                                         Continue
                                     </Button>
                                 </div>
@@ -131,7 +207,7 @@ export default function DashboardPage() {
                       <CardContent className="space-y-2">
                             <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50">
                                 <div className="w-8 h-8 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center">
-                                    <Check className="h-4 w-4" />
+                                    <CheckCircle className="h-4 w-4" />
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-medium">Completed "API Security"</p>
@@ -171,7 +247,7 @@ export default function DashboardPage() {
                       </CardContent>
                     </Card>
 
-                     <Card className="glass-effect animate-slide-in-right card-hover">
+                     <Card className="glass-effect animate-slide-in-right card-hover" onClick={() => setAchievementsModalOpen(true)}>
                         <CardHeader>
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-xl">Latest Achievements</CardTitle>

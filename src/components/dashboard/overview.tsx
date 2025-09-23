@@ -8,13 +8,13 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 
 export function Overview() {
   return (
-    <Card className="col-span-1 lg:col-span-2 glass-effect">
+    <Card className="col-span-1 lg:col-span-2 glass-effect w-full h-full">
       <CardHeader>
         <CardTitle>Weekly Activity</CardTitle>
       </CardHeader>
-      <CardContent className="pl-2">
-        <ChartContainer config={{}} className="min-h-[200px] w-full">
-          <ResponsiveContainer width="100%" height={350}>
+      <CardContent className="pl-2 h-[calc(100%-4rem)]">
+        <ChartContainer config={{}} className="min-h-[200px] w-full h-full">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={analyticsData.weeklyActivity}>
               <XAxis
                 dataKey="day"
