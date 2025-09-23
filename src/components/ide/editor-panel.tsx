@@ -89,9 +89,7 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
 
           editorInstance.onDidChangeModelContent(() => {
               const value = editorInstance.getValue();
-              if (value !== activeFileContent) {
-                  onCodeChange(value || '');
-              }
+              onCodeChange(value || '');
           });
 
           editorRef.current = editorInstance;
@@ -117,16 +115,17 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
           editorRef.current?.dispose();
           editorRef.current = null;
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCodeChange, onEditorReady]);
 
     useEffect(() => {
         if (editorRef.current) {
             const model = editorRef.current.getModel();
+            
+            // Only update the model's value if it's different from the active file content.
+            // This is crucial to prevent the cursor from jumping.
             if (model && model.getValue() !== activeFileContent) {
-                editorRef.current.executeEdits(null, [{
-                    range: model.getFullModelRange(),
-                    text: activeFileContent,
-                }]);
+                editorRef.current.setValue(activeFileContent);
             }
             
             const fileExtension = activeTab.split('.').pop() || '';
@@ -136,7 +135,7 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
                 monacoRef.current.editor.setModelLanguage(model, language);
             }
         }
-    }, [activeTab, activeFileContent, files]);
+    }, [activeTab, activeFileContent]);
 
 
     useEffect(() => {
@@ -184,5 +183,3 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
         </>
     );
 }
-
-    
