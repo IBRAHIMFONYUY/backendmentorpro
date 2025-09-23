@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { FaDiscord, FaGithub, FaGoogle, FaNodeJs, FaPython, FaJava, FaAws, FaPhp, FaDocker, FaYoutube, FaTwitter } from 'react-icons/fa';
-import { Rocket, Compass, Play, Save, Share, Robot, Terminal, CheckCircle, Trophy, Users, NetworkWired, Download, ChartLine, PaperPlane, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt } from 'lucide-react';
+import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt } from 'lucide-react';
 
 
 export default function Home() {
@@ -155,7 +155,7 @@ export default function Home() {
                                 <div className="p-4 bg-dark-surface border-t border-dark-border flex justify-between items-center">
                                     <div className="flex space-x-3">
                                         <button id="runCodeBtn" className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center space-x-2"><Play className="h-4 w-4" /><span>Run Code</span></button>
-                                        <button id="aiHelpBtn" className="px-4 py-2 bg-accent-purple text-white rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center space-x-2"><Robot className="h-4 w-4" /><span>AI Help</span></button>
+                                        <button id="aiHelpBtn" className="px-4 py-2 bg-accent-purple text-white rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center space-x-2"><Bot className="h-4 w-4" /><span>AI Help</span></button>
                                         <button id="shareCodeBtn" className="px-4 py-2 bg-accent-blue text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center space-x-2"><Share className="h-4 w-4" /><span>Share</span></button>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm text-gray-400">
@@ -194,7 +194,7 @@ export default function Home() {
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8 mb-16">
                     <div className="feature-card glass-effect rounded-2xl p-8 cursor-pointer group" id="aiFeatureCard">
-                        <div className="w-20 h-20 bg-gradient-to-r from-accent-blue to-accent-purple rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><Robot className="text-white text-3xl h-10 w-10" /></div>
+                        <div className="w-20 h-20 bg-gradient-to-r from-accent-blue to-accent-purple rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><Bot className="text-white text-3xl h-10 w-10" /></div>
                         <h3 className="text-2xl font-bold mb-4">AI Mentor Assistant</h3>
                         <p className="text-gray-300 mb-6 leading-relaxed">Context-aware AI that provides real-time hints, debugging help, code reviews, and explains complex concepts with personalized learning paths.</p>
                         <div className="flex items-center justify-between">
@@ -212,7 +212,7 @@ export default function Home() {
                         </div>
                     </div>
                     <div className="feature-card glass-effect rounded-2xl p-8 cursor-pointer group" id="apiFeatureCard">
-                        <div className="w-20 h-20 bg-gradient-to-r from-accent-purple to-accent-blue rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><NetworkWired className="text-white text-3xl h-10 w-10" /></div>
+                        <div className="w-20 h-20 bg-gradient-to-r from-accent-purple to-accent-blue rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><Network className="text-white text-3xl h-10 w-10" /></div>
                         <h3 className="text-2xl font-bold mb-4">API Playground</h3>
                         <p className="text-gray-300 mb-6 leading-relaxed">Built-in Postman-like interface for testing APIs, viewing responses, debugging endpoints, and generating API documentation automatically.</p>
                         <div className="flex items-center justify-between">
@@ -275,7 +275,7 @@ export default function Home() {
                                 <textarea className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-white focus:border-accent-blue focus:outline-none font-mono h-24" placeholder='{"title": "Test Post", "body": "This is a test", "userId": 1}'></textarea>
                             </div>
                             <div className="flex space-x-3">
-                                <button id="sendRequestBtn" className="flex-1 px-6 py-3 btn-primary text-white rounded-xl font-medium flex items-center justify-center space-x-2"><PaperPlane className="h-4 w-4" /><span>Send Request</span></button>
+                                <button id="sendRequestBtn" className="flex-1 px-6 py-3 btn-primary text-white rounded-xl font-medium flex items-center justify-center space-x-2"><Send className="h-4 w-4" /><span>Send Request</span></button>
                                 <button id="clearBtn" className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"><Trash className="h-4 w-4" /></button>
                             </div>
                             <div id="apiResponse" className="hidden">
