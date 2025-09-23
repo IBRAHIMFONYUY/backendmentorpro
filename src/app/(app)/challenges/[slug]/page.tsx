@@ -1,6 +1,12 @@
 import { challenges } from "@/lib/data";
 import { notFound } from "next/navigation";
 import { CodeIdeView } from "@/components/code-ide-view";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Backend Mentor - Code Editor",
+    description: "The Backend Mentor code editor, a full-featured, web-based IDE for backend development challenges.",
+};
 
 export default function Page({ params }: { params: { slug: string } }) {
   const challenge = challenges.find((c) => c.slug === params.slug);
@@ -9,11 +15,7 @@ export default function Page({ params }: { params: { slug: string } }) {
     notFound();
   }
 
-  return (
-    <div className="fixed inset-0 bg-background">
-     <CodeIdeView challenge={challenge} />
-    </div>
-  );
+  return <CodeIdeView challenge={challenge} />;
 }
 
 export async function generateStaticParams() {

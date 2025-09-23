@@ -1,79 +1,93 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, Loader2, RefreshCw, XCircle, PlusCircle } from 'lucide-react';
+import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus, ChevronsRightLeft } from 'lucide-react';
 import type { FileSystemNode, TestResult } from '@/lib/ide-data';
 
 interface FileExplorerProps {
     files: FileSystemNode;
     activeTab: string;
-    openTabs: string[];
-    setOpenTabs: (tabs: string[]) => void;
-    setActiveTab: (tab: string) => void;
+    onFileSelect: (path: string) => void;
     testResults: TestResult[];
 }
 
-export function FileExplorer({ files, activeTab, openTabs, setOpenTabs, setActiveTab, testResults }: FileExplorerProps) {
+export function FileExplorer({ files, activeTab, onFileSelect, testResults }: FileExplorerProps) {
+    const [openFolders, setOpenFolders] = useState<Set<string>>(new Set(['/']));
+    
     const passedTests = testResults.filter(r => r.status === 'passed').length;
     const totalTests = testResults.length;
     const progressValue = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
     const getFileIcon = (filename: string) => {
-        if (filename.endsWith('.js')) return <FileJson className="h-4 w-4 text-yellow-400" />;
-        if (filename.endsWith('.json')) return <FileJson className="h-4 w-4 text-green-400" />;
-        if (filename.endsWith('.md')) return <FileText className="h-4 w-4 text-blue-400" />;
-        return <File className="h-4 w-4 text-muted-foreground" />;
+        if (filename.endsWith('.js')) return <FileJson className="h-4 w-4 text-yellow-400 shrink-0" />;
+        if (filename.endsWith('.json')) return <FileJson className="h-4 w-4 text-green-400 shrink-0" />;
+        if (filename.endsWith('.md')) return <FileText className="h-4 w-4 text-blue-400 shrink-0" />;
+        return <File className="h-4 w-4 text-muted-foreground shrink-0" />;
     }
 
-    const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
-        const [isOpen, setIsOpen] = useState(true);
+    const toggleFolder = (path: string) => {
+      setOpenFolders(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(path)) {
+          newSet.delete(path);
+        } else {
+          newSet.add(path);
+        }
+        return newSet;
+      });
+    }
+
+    const FileTree = ({ node, level = 0, pathPrefix = '' }: { node: FileSystemNode, level?: number, pathPrefix?: string }) => {
         const isFolder = node.type === 'folder';
-
-        const handleToggle = () => {
-            if (isFolder) {
-                setIsOpen(!isOpen);
-            }
-        };
-
-        const handleFileClick = (path: string) => {
-            if (!openTabs.includes(path)) {
-                setOpenTabs([...openTabs, path]);
-            }
-            setActiveTab(path);
-        };
-
-        return (
+        const currentPath = `${pathPrefix}${node.name}`;
+        
+        if (isFolder) {
+          const isOpen = openFolders.has(currentPath);
+          return (
             <div className="text-sm">
                 <div 
-                    className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer ${activeTab === node.path && !isFolder ? 'bg-primary/20' : ''}`} 
-                    style={{ paddingLeft: `${level * 1.5}rem` }}
-                    onClick={() => isFolder ? handleToggle() : handleFileClick(node.path)}
+                    className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer`}
+                    style={{ paddingLeft: `${level * 0.5}rem` }}
+                    onClick={() => toggleFolder(currentPath)}
                 >
-                    {isFolder ? (
-                        isOpen ? <FolderOpen className="h-4 w-4 text-blue-400" /> : <Folder className="h-4 w-4 text-blue-400" />
-                    ) : getFileIcon(node.name)}
-                    <span className="text-sm">{node.name}</span>
+                    {isOpen ? <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" /> : <Folder className="h-4 w-4 text-blue-400 shrink-0" />}
+                    <span className="truncate">{node.name}</span>
                 </div>
-                {isFolder && isOpen && node.children && (
-                    <div>
-                        {node.children.map(child => <FileTree key={child.path} node={child} level={level + 1} />)}
+                {isOpen && node.children && (
+                    <div className="pl-2">
+                        {node.children.map(child => <FileTree key={child.path} node={child} level={level + 1} pathPrefix={`${currentPath}/`} />)}
                     </div>
                 )}
             </div>
-        );
+          )
+        }
+        
+        // Is a file
+        return (
+             <div 
+                className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer file-tree-item ${activeTab === node.path ? 'active' : ''}`}
+                style={{ paddingLeft: `${level * 0.5}rem` }}
+                onClick={() => onFileSelect(node.path)}
+            >
+                {getFileIcon(node.name)}
+                <span className="truncate">{node.name}</span>
+            </div>
+        )
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#0f172a] text-gray-400">
-            <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-                <h3 className="text-xs font-semibold tracking-wider uppercase">Explorer</h3>
-                <div className="flex gap-2">
-                    <button title="New File" className="hover:text-white"><File className="h-4 w-4" /></button>
-                    <button title="New Folder" className="hover:text-white"><FolderPlus className="h-4 w-4" /></button>
-                    <button title="Refresh" className="hover:text-white"><RefreshCw className="h-4 w-4" /></button>
+        <div className="flex flex-col h-full bg-inherit text-gray-300">
+            <div className="p-3 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold tracking-wide uppercase">Explorer</h3>
+                <div className="flex space-x-2">
+                    <button className="text-gray-400 hover:text-white" title="New File"><FilePlus className="h-4 w-4" /></button>
+                    <button className="text-gray-400 hover:text-white" title="New Folder"><FolderPlus className="h-4 w-4" /></button>
+                    <button className="text-gray-400 hover:text-white" title="Refresh"><RefreshCw className="h-4 w-4" /></button>
+                     <button className="text-gray-400 hover:text-white" title="Collapse All"><ChevronsRightLeft className="h-4 w-4 rotate-90" /></button>
                 </div>
+              </div>
             </div>
             <ScrollArea className="flex-grow p-2">
                <FileTree node={files} />
@@ -83,7 +97,7 @@ export function FileExplorer({ files, activeTab, openTabs, setOpenTabs, setActiv
                 <span>Progress</span>
                 <span>{passedTests}/{totalTests} tests</span>
               </div>
-               <Progress value={progressValue} className="h-1.5" />
+               <Progress value={progressValue} className="h-2" />
                <div className="mt-3 space-y-1.5 text-xs">
                   {testResults.map(result => (
                     <div key={result.name} className="flex items-center gap-2">

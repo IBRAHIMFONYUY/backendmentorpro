@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import Script from "next/script";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
@@ -13,18 +14,26 @@ import { FileExplorer } from "./ide/file-explorer";
 import { EditorPanel } from "./ide/editor-panel";
 import { RightPanel } from "./ide/right-panel";
 import { IdeStatusBar } from "./ide/ide-status-bar";
+import { SettingsModal } from "./ide/settings-modal";
+import { CommandPalette } from "./ide/command-palette";
+import { ArrowLeft, Bot, ChevronRight, Cog, Loader2, Play, PlusCircle, Send, Share2 } from "lucide-react";
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [files, setFiles] = useState<FileSystemNode>(initialFiles);
-  const [openTabs, setOpenTabs] = useState<string[]>(['rest-api-auth/server.js']);
-  const [activeTab, setActiveTab] = useState('rest-api-auth/server.js');
+  const [openTabs, setOpenTabs] = useState<string[]>(['/server.js']);
+  const [activeTab, setActiveTab] = useState('/server.js');
   const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
+  
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
   
+  const { toast } = useToast();
+
   const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
       if (node.path === path) return node;
       if (node.children) {
@@ -41,12 +50,16 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void, setTerminalOutput: (updater: (prev: any[]) => any[]) => void) => {
     setIsRunning(true);
     setActiveRightPanelTab("output");
-    setTerminalOutput(prev => [...prev, {type: 'command', content: `$ node ${activeTab}`}]);
+    setTerminalOutput(prev => [...prev, {type: 'command', content: `> node ${activeTab.substring(1)}`}]);
+    toast({ title: "Running code..." });
+
     await new Promise(resolve => setTimeout(resolve, 500));
-    setTerminalOutput(prev => [...prev, {type: 'output', content: activeFileContent.split('\n')[1] || 'No output'}]);
+    setTerminalOutput(prev => [...prev, {type: 'output', content: "Server running on port 3000"}]);
     await new Promise(resolve => setTimeout(resolve, 200));
-    setTerminalOutput(prev => [...prev, {type: 'success', content: 'Execution finished.'}]);
+    setTerminalOutput(prev => [...prev, {type: 'success', content: 'Execution finished successfully.'}]);
+
     setIsRunning(false);
+    toast({ title: "Execution Finished", description: "Check the output panel." });
   };
 
   const handleSubmit = async (setActiveRightPanelTab: (tab: string) => void) => {
@@ -85,72 +98,118 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       setFiles(updateContent(files));
   }
 
+  const handleFileSelect = (path: string) => {
+    if (!openTabs.includes(path)) {
+      setOpenTabs(prev => [...prev, path]);
+    }
+    setActiveTab(path);
+  }
+
   const handleCloseTab = (path: string, e: React.MouseEvent) => {
       e.stopPropagation();
       const newTabs = openTabs.filter(t => t !== path);
       setOpenTabs(newTabs);
       if (activeTab === path) {
-          setActiveTab(newTabs[0] || '');
+          setActiveTab(newTabs.length > 0 ? newTabs[0] : '');
       }
   }
 
+  const executeCommand = (command: string) => {
+    switch (command) {
+      case 'newProject':
+        setNewProjectModalOpen(true);
+        break;
+      case 'openSettings':
+        setSettingsModalOpen(true);
+        break;
+      // Add more command executions here
+      default:
+        toast({ title: "Command not recognized", variant: "destructive" });
+    }
+    setCommandPaletteOpen(false);
+  }
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        setCommandPaletteOpen(v => !v);
+      }
+       if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setSettingsModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <>
-    <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
-    <NewProjectModal isOpen={newProjectModalOpen} onClose={() => setNewProjectModalOpen(false)} />
+      <Script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js" />
+      <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
+      <NewProjectModal isOpen={newProjectModalOpen} onClose={() => setNewProjectModalOpen(false)} />
+      <SettingsModal isOpen={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
+      <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
 
-    <div className="h-screen w-full flex flex-col bg-[#020617] text-gray-300 font-mono text-sm">
-      <IdeTopBar 
-        challenge={challenge}
-        onNewProject={() => setNewProjectModalOpen(true)}
-        onAiClick={() => setAiModalOpen(true)}
-        onRunCode={(...args) => handleRunCode(...args)}
-        onSubmit={(...args) => handleSubmit(...args)}
-        isRunning={isRunning}
-        isSubmitting={isSubmitting}
-      />
-      
-      <div className="flex-1 flex overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
-                <FileExplorer
-                    files={files}
-                    activeTab={activeTab}
-                    openTabs={openTabs}
-                    setOpenTabs={setOpenTabs}
-                    setActiveTab={setActiveTab}
-                    testResults={testResults}
-                />
+      <div className="h-screen w-screen flex flex-col bg-background ide-body">
+        <IdeTopBar 
+          challenge={challenge}
+          onNewProject={() => setNewProjectModalOpen(true)}
+          onAiClick={() => setAiModalOpen(true)}
+          onSettingsClick={() => setSettingsModalOpen(true)}
+          onRunCode={() => {
+            const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
+            if (rightPanel) rightPanel.runCode();
+          }}
+          onSubmit={() => {
+             const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
+            if (rightPanel) rightPanel.submit();
+          }}
+          isRunning={isRunning}
+          isSubmitting={isSubmitting}
+        />
+        
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+              <ResizablePanel defaultSize={18} minSize={15} maxSize={30} className="hidden md:block ide-sidebar">
+                  <FileExplorer
+                      files={files}
+                      activeTab={activeTab}
+                      onFileSelect={handleFileSelect}
+                      testResults={testResults}
+                  />
+              </ResizablePanel>
+              <ResizableHandle withHandle className="hidden md:flex"/>
+            
+            <ResizablePanel className="flex-1 flex flex-col">
+              <ResizablePanelGroup direction="vertical">
+                <ResizablePanel defaultSize={65} minSize={25} className="relative flex flex-col">
+                  <EditorPanel
+                      openTabs={openTabs}
+                      activeTab={activeTab}
+                      setActiveTab={setActiveTab}
+                      onCloseTab={handleCloseTab}
+                      files={files}
+                      onCodeChange={handleCodeChange}
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={35} minSize={20}>
+                  <RightPanel
+                      testResults={testResults}
+                      files={files}
+                      handleRunCode={handleRunCode}
+                      handleSubmit={handleSubmit}
+                  />
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </ResizablePanel>
-            <ResizableHandle withHandle />
-          
-          <ResizablePanel className="flex-1 flex flex-col">
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={65} minSize={25} className="relative flex flex-col">
-                <EditorPanel
-                    openTabs={openTabs}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    handleCloseTab={handleCloseTab}
-                    activeFileContent={activeFileContent}
-                    onCodeChange={handleCodeChange}
-                />
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={35} minSize={20}>
-                <RightPanel
-                    testResults={testResults}
-                    files={files}
-                    onRunCode={(...args) => handleRunCode(...args)}
-                    onSubmit={(...args) => handleSubmit(...args)}
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          </ResizablePanelGroup>
+        </div>
+        <IdeStatusBar />
       </div>
-      <IdeStatusBar />
-    </div>
     </>
   );
 }

@@ -33,7 +33,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const pathname = usePathname();
 
-  if (pathname === '/playground') {
+  // Do not render the main app layout for the IDE routes
+  if (pathname.startsWith('/challenges/') || pathname === '/playground') {
       return <>{children}</>;
   }
 

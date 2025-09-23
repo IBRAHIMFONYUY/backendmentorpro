@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeEditor } from "@/components/code-editor";
 import { Loader2, Send, Trash, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "./ui/scroll-area";
 
 type ResponseData = {
   status: number;
@@ -33,6 +32,7 @@ export function ApiPlaygroundView() {
   const handleSend = async () => {
     setIsLoading(true);
     setResponse(null);
+    toast({ title: "Sending API request..." });
 
     let parsedHeaders = {};
     try {
@@ -54,45 +54,42 @@ export function ApiPlaygroundView() {
       }
     }
 
-    try {
-      const startTime = Date.now();
-      // This is a mock fetch for demonstration.
-      // In a real scenario, you'd have a way to proxy this request.
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
-      const mockSuccess = Math.random() > 0.2;
-      const endTime = Date.now();
+    const startTime = Date.now();
+    // This is a mock fetch for demonstration.
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+    const endTime = Date.now();
+    const mockSuccess = Math.random() > 0.2;
 
-      if (mockSuccess) {
-         const resBody = {
-            success: true,
-            token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-            user: { id: "123", email: "user@example.com" }
+    if (mockSuccess) {
+        const resBody = {
+          success: true,
+          token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          user: { id: "123", email: "user@example.com" }
         };
         const resSize = new TextEncoder().encode(JSON.stringify(resBody)).length;
         setResponse({
-            status: 200,
-            statusText: "OK",
-            headers: { "content-type": "application/json", "x-powered-by": "BackendMentorAI" },
-            body: resBody,
-            time: endTime - startTime,
-            size: resSize,
+          status: 200,
+          statusText: "OK",
+          headers: { "content-type": "application/json", "x-powered-by": "BackendMentorAI" },
+          body: resBody,
+          time: endTime - startTime,
+          size: resSize,
         });
-      } else {
-        throw new Error("Mock API Error: Invalid credentials");
-      }
-
-    } catch (e) {
-      const error = e as Error;
-      toast({ variant: "destructive", title: "Request Failed", description: error.message });
-      setResponse({
-        status: 401,
-        statusText: "Unauthorized",
-        headers: { "content-type": "application/json" },
-        body: { error: error.message },
-        time: (e as any).time || 50,
-        size: JSON.stringify({ error: error.message }).length
-      })
+        toast({ title: "API request completed", description: "Status: 200 OK" });
+    } else {
+        const errorBody = { error: "Mock API Error: Invalid credentials" };
+        const errorSize = new TextEncoder().encode(JSON.stringify(errorBody)).length;
+        setResponse({
+            status: 401,
+            statusText: "Unauthorized",
+            headers: { "content-type": "application/json" },
+            body: errorBody,
+            time: endTime - startTime,
+            size: errorSize,
+        });
+        toast({ variant: "destructive", title: "Request Failed", description: "Status: 401 Unauthorized" });
     }
+    
     setIsLoading(false);
   };
 
@@ -116,11 +113,12 @@ export function ApiPlaygroundView() {
     if (!response) return;
     navigator.clipboard.writeText(JSON.stringify(response.body, null, 2));
     setCopied(true);
+    toast({ title: "Response body copied to clipboard!" });
     setTimeout(() => setCopied(false), 2000);
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-4 h-full text-sm">
       {/* Request Section */}
       <div className="flex gap-2">
         <Select value={method} onValueChange={setMethod}>
@@ -135,19 +133,19 @@ export function ApiPlaygroundView() {
             <SelectItem value="DELETE">DELETE</SelectItem>
           </SelectContent>
         </Select>
-        <Input className="bg-card glass-effect" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/data" />
+        <Input className="bg-card glass-effect font-mono" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/data" />
         <Button onClick={handleSend} disabled={isLoading} className="btn-primary-gradient">
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
           Send
         </Button>
-         <Button onClick={() => { setUrl(''); setHeaders(''); setBody(''); setResponse(null); }} variant="destructive" size="icon">
+         <Button onClick={() => { setUrl(''); setHeaders('{\n  "Content-Type": "application/json"\n}'); setBody(''); setResponse(null); }} variant="destructive" size="icon">
           <Trash />
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-grow min-h-0">
+      <div className="grid grid-cols-1 gap-4 flex-grow min-h-0">
         <Tabs defaultValue="body" className="flex flex-col bg-card glass-effect rounded-lg">
-          <TabsList className="m-2">
+          <TabsList className="m-2 bg-background/50">
             <TabsTrigger value="body">Body</TabsTrigger>
             <TabsTrigger value="headers">Headers</TabsTrigger>
           </TabsList>
@@ -167,7 +165,7 @@ export function ApiPlaygroundView() {
               </div>
             ) : response ? (
               <div className="flex flex-col h-full">
-                <div className="p-4 border-b flex items-center gap-4 text-sm">
+                <div className="p-2 border-b flex items-center gap-4 text-xs">
                   <span>Status:</span>
                   <span className={`font-bold ${getStatusColor(response.status)}`}>
                     {response.status} {response.statusText}
@@ -181,7 +179,7 @@ export function ApiPlaygroundView() {
                    </div>
                 </div>
                 <Tabs defaultValue="body" className="flex-grow flex flex-col min-h-0">
-                  <TabsList className="m-2">
+                  <TabsList className="m-2 bg-background/50">
                     <TabsTrigger value="body">Body</TabsTrigger>
                     <TabsTrigger value="headers">Headers</TabsTrigger>
                   </TabsList>
