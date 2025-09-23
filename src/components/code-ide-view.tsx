@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
@@ -172,7 +172,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const rightPanelRef = useRef<RightPanelRef>(null);
   const rightPanelLastSize = useRef<number>(35);
 
-  const handleRunCode = async () => {
+  const handleRunCode = useCallback(async () => {
     if (!activeTab) {
       toast({ variant: 'destructive', title: 'No file selected', description: 'Please select a file to run.' });
       return;
@@ -203,7 +203,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     
     setIsRunning(false);
     toast({ title: "Execution Finished", description: "Check the output panel." });
-  };
+  }, [activeTab, files, toast]);
 
   const serializeFileSystem = (node: FileSystemNode, indent = ''): string => {
     let result = `${indent}${node.name}${node.type === 'folder' ? '/' : ''}\n`;
@@ -219,7 +219,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     return result;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     rightPanelRef.current?.submit();
     toast({ title: "Submitting solution", description: "AI is reviewing your code..." });
@@ -253,7 +253,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } finally {
         setIsSubmitting(false);
     }
-  };
+  }, [challenge.description, challenge.testCases, challenge.title, files, toast]);
   
   const handleCodeChange = (newCode: string) => {
       setFiles((prevFiles) => {
@@ -315,13 +315,13 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     setCommandPaletteOpen(false);
   }
   
-  const runCodeAction = () => {
+  const runCodeAction = useCallback(() => {
     handleRunCode();
-  };
+  }, [handleRunCode]);
 
-  const submitAction = () => {
+  const submitAction = useCallback(() => {
     handleSubmit();
-  };
+  }, [handleSubmit]);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -378,8 +378,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       window.removeEventListener('click', handleGlobalClick);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [runCodeAction, submitAction]);
 
   const onSettingsChange = (newSettings: IdeSettings) => {
     setSettings(newSettings);
@@ -776,7 +775,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       openTabs={openTabs}
                       activeTab={activeTab}
                       setActiveTab={setActiveTab}
-                      onCloseTab={handleCloseTab}
+                      onCloseTab={onCloseTab}
                       files={augmentedChallenge.fileSystem}
                       onCodeChange={handleCodeChange}
                       editorSettings={settings}
