@@ -7,14 +7,14 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
 import { ScrollArea } from "../ui/scroll-area";
-import { Server, Code, Cubes, MessageSquare, ShoppingCart, Rocket } from "lucide-react";
+import { Server, Code, Boxes, MessageSquare, ShoppingCart, Rocket } from "lucide-react";
 import { FaPython, FaLaravel, FaFire, FaFileCode } from "react-icons/fa";
 import { SiRust } from "react-icons/si";
 
 const templates = [
   { id: "rest-api", name: "REST API", description: "Express.js + JWT Auth", icon: <Server /> },
   { id: "graphql", name: "GraphQL API", description: "Apollo Server + TS", icon: <Code /> },
-  { id: "microservices", name: "Microservices", description: "Docker + Kubernetes", icon: <Cubes /> },
+  { id: "microservices", name: "Microservices", description: "Docker + Kubernetes", icon: <Boxes /> },
   { id: "realtime-chat", name: "Real-time Chat", description: "Socket.io + Redis", icon: <MessageSquare /> },
   { id: "ecommerce", name: "E-commerce API", description: "Stripe + PostgreSQL", icon: <ShoppingCart /> },
   { id: "django", name: "Django API", description: "Python DRF", icon: <FaPython /> },
