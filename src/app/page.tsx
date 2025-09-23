@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { FaDiscord, FaGithub, FaGoogle, FaNodeJs, FaPython, FaJava, FaAws, FaPhp, FaDocker, FaYoutube, FaTwitter } from 'react-icons/fa';
 import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Preloader from '@/components/preloader';
 
 
 export default function Home() {
@@ -19,14 +20,17 @@ export default function Home() {
     const [apiRequestBody, setApiRequestBody] = useState('{"title": "Test Post", "body": "This is a test", "userId": 1}');
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [isApiLoading, setIsApiLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
 
     // Smooth scrolling for anchor links
     useEffect(() => {
+        if (isLoading) return;
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const targetId = this.getAttribute('href');
+                if (!targetId) return;
                 const targetElement = document.querySelector(targetId);
                 if (targetElement) {
                     targetElement.scrollIntoView({
@@ -35,10 +39,20 @@ export default function Home() {
                 }
             });
         });
+    }, [isLoading]);
+
+    useEffect(() => {
+        // Simulate loading time for the preloader effect
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 14000); // The animation is quite long
+
+        return () => clearTimeout(timer);
     }, []);
 
     // Animate counters on component mount
     useEffect(() => {
+        if (isLoading) return;
         function animateCounter(elementId: string, target: number, duration = 2000, suffix = '') {
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -63,7 +77,7 @@ export default function Home() {
             animateCounter('successRate', 94, 2000, '%');
         }, 1000);
 
-    }, [toast]);
+    }, [isLoading, toast]);
     
     const handleAuthModalOpen = () => {
         setOnboardingStep(false);
@@ -91,6 +105,10 @@ export default function Home() {
         setAuthModalOpen(false);
         setTimeout(() => {
             toast({ title: 'Personalizing your dashboard...' });
+             // Redirect to dashboard after a short delay
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
         }, 1500);
     }
     
@@ -159,6 +177,10 @@ export default function Home() {
         setApiResponse(null);
         toast({ title: 'Cleared API playground' });
     }
+
+  if (isLoading) {
+    return <Preloader />;
+  }
 
   return (
     <div className="bg-dark-bg text-white overflow-x-hidden">
