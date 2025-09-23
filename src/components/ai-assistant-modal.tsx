@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Bot, Bug, Lightbulb, Loader2, Rocket, Send, X, User, Paperclip, Mic, Image as ImageIcon } from "lucide-react";
 import { mentorChat } from "@/ai/flows/mentor-chat";
