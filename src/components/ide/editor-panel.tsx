@@ -7,19 +7,7 @@ import type { editor } from "monaco-editor";
 import { type IdeSettings } from "./settings-modal";
 import { getFileIcon } from "@/lib/ide-utils";
 
-interface EditorPanelProps {
-    openTabs: string[];
-    activeTab: string;
-    setActiveTab: (tab: string) => void;
-    onCloseTab: (path: string, e: React.MouseEvent) => void;
-    files: FileSystemNode;
-    onCodeChange: (newCode: string) => void;
-    editorSettings: IdeSettings | null;
-    onContextMenu: (e: React.MouseEvent) => void;
-    onEditorReady: (editor: editor.IStandaloneCodeEditor) => void;
-}
-
-const languageMap: { [key: string]: string } = {
+export const languageMap: { [key: string]: string } = {
     js: "javascript",
     jsx: "javascript",
     ts: "typescript",
@@ -43,6 +31,18 @@ const languageMap: { [key: string]: string } = {
     kt: "kotlin",
     scala: "scala",
 };
+
+interface EditorPanelProps {
+    openTabs: string[];
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
+    onCloseTab: (path: string, e: React.MouseEvent) => void;
+    files: FileSystemNode;
+    onCodeChange: (newCode: string) => void;
+    editorSettings: IdeSettings | null;
+    onContextMenu: (e: React.MouseEvent) => void;
+    onEditorReady: (editor: editor.IStandaloneCodeEditor) => void;
+}
 
 
 export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, files, onCodeChange, editorSettings, onContextMenu, onEditorReady }: EditorPanelProps) {

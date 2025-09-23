@@ -9,8 +9,8 @@ import { ScrollArea } from '../ui/scroll-area';
 interface RightPanelProps {
     testResults: TestResult[];
     files: FileSystemNode;
-    handleRunCode: (setActiveRightPanelTab: (tab: string) => void) => void;
-    handleSubmit: (setActiveRightPanelTab: (tab: string) => void) => void;
+    handleRunCode: () => void;
+    handleSubmit: () => void;
     addFile: (name: string, path: string) => boolean;
     addFolder: (name: string, path: string) => boolean;
     deleteNode: (path: string) => boolean;
@@ -21,6 +21,7 @@ interface RightPanelProps {
 
 type TerminalHandle = {
     executeCommand: (command: string) => void;
+    runWithAIDebugger: (code: string, language: string) => void;
 };
 
 
@@ -41,11 +42,15 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
     const terminalRef = useRef<TerminalHandle>(null);
 
     useImperativeHandle(ref, () => ({
-        runCode: () => handleRunCode(setActiveTab),
-        submit: () => handleSubmit(setActiveTab),
+        runCode: () => setActiveTab('output'),
+        submit: () => setActiveTab('tests'),
         executeCommandInTerminal: (command: string) => {
             setActiveTab('output');
             terminalRef.current?.executeCommand(command);
+        },
+        runWithAIDebugger: (code: string, language: string) => {
+            setActiveTab('output');
+            terminalRef.current?.runWithAIDebugger(code, language);
         }
     }));
 
@@ -78,7 +83,7 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
                         <TerminalView
                             ref={terminalRef}
                             files={files}
-                            onRunTests={() => handleSubmit(setActiveTab)}
+                            onRunTests={() => handleSubmit()}
                             addFile={addFile}
                             addFolder={addFolder}
                             deleteNode={deleteNode}
@@ -99,5 +104,3 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
 });
 
 RightPanel.displayName = "RightPanel";
-
-    

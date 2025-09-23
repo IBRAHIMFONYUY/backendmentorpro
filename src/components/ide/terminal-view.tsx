@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 're
 import type { FileSystemNode } from '@/lib/ide-data';
 import { mentorChat } from '@/ai/flows/mentor-chat';
 import { useToast } from '@/hooks/use-toast';
+import { generateDebuggingAssistance } from '@/ai/flows/generate-debugging-assistance';
 
 interface TerminalViewProps {
     files: FileSystemNode;
@@ -53,6 +54,20 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
     useImperativeHandle(ref, () => ({
       executeCommand(command: string) {
         handleTerminalCommand(command, true);
+      },
+      async runWithAIDebugger(code: string, language: string) {
+        setTerminalOutput(prev => [...prev, { type: 'output', content: `Simulating execution of ${language} code with AI debugger...`}]);
+        try {
+            const result = await generateDebuggingAssistance({ code, language });
+            const output: TerminalLine[] = [];
+            output.push({ type: 'ai', content: `[AI Analysis] for ${language} code:` });
+            output.push({ type: 'ai', content: `&nbsp;> Error Identification: ${result.errorIdentification}` });
+            output.push({ type: 'ai', content: `&nbsp;> Suggested Fixes: ${result.suggestedFixes.replace(/\n/g, '<br>&nbsp;&nbsp;')}`});
+            output.push({ type: 'ai', content: `&nbsp;> Root Cause: ${result.rootCauseExplanation}` });
+            setTerminalOutput(prev => [...prev, ...output]);
+        } catch(e) {
+            setTerminalOutput(prev => [...prev, { type: 'error', content: 'AI debugger failed to analyze the code.'}]);
+        }
       }
     }));
 
@@ -265,7 +280,7 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
                     if (node && node.type === 'file') {
                         onOpenFile(filePath);
                     } else {
-                         output.push({type: 'error', content: `${cmd}: ${args[1]}: No such file`});
+                         output.push({type: 'error', content: `${cmd}: ${args[1]}: No such file. Usage: ${cmd} <filename>`});
                     }
                 } else {
                     output.push({type: 'error', content: `${cmd}: missing file operand. Usage: ${cmd} <filename>`});
@@ -293,7 +308,7 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
                          output.push({type: 'error', content: `!: event not found: ${args[1]}`});
                     }
                 } else {
-                    output.push({type: 'error', content: `!: missing history number`});
+                    output.push({type: 'error', content: `!: missing history number. Usage: ! <history_number>`});
                 }
                 return; // Prevent double output
             case 'wc':
@@ -305,7 +320,7 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
                         const chars = content.length;
                         output.push({type: 'output', content: `${lines} ${words} ${chars} ${args[1]}`});
                     } else {
-                        output.push({type: 'error', content: `wc: ${args[1]}: No such file`});
+                        output.push({type: 'error', content: `wc: ${args[1]}: No such file. Usage: wc <filename>`});
                     }
                 } else {
                     output.push({type: 'error', content: 'wc: missing file operand. Usage: wc <filename>'});
@@ -317,7 +332,7 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
                     if (content !== null) {
                        output.push({type: 'output', content: content.split('\n').slice(0, 10).join('<br/>')});
                     } else {
-                        output.push({type: 'error', content: `head: ${args[1]}: No such file`});
+                        output.push({type: 'error', content: `head: ${args[1]}: No such file. Usage: head <filename>`});
                     }
                 } else {
                     output.push({type: 'error', content: 'head: missing file operand. Usage: head <filename>'});
@@ -329,7 +344,7 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
                     if (content !== null) {
                        output.push({type: 'output', content: content.split('\n').slice(-10).join('<br/>')});
                     } else {
-                        output.push({type: 'error', content: `tail: ${args[1]}: No such file`});
+                        output.push({type: 'error', content: `tail: ${args[1]}: No such file. Usage: tail <filename>`});
                     }
                 } else {
                     output.push({type: 'error', content: 'tail: missing file operand. Usage: tail <filename>'});

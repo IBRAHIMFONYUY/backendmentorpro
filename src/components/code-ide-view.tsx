@@ -22,6 +22,7 @@ import { ContextMenu } from "./ide/context-menu";
 import { RenameNodeModal } from "./ide/rename-node-modal";
 import { Ban, ClipboardPaste, Copy, CopyPlus, Edit, FileCog, FilePlus2, Folder, Play, Scissors, Search, Trash2 } from "lucide-react";
 import type { editor } from "monaco-editor";
+import { languageMap } from "./ide/editor-panel";
 
 const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | ((prevState: T) => T)) => void] => {
   const [state, setState] = useState<T>(() => {
@@ -114,6 +115,8 @@ const addNodeToTree = (tree: FileSystemNode, basePath: string, name: string, typ
 type RightPanelRef = {
   runCode: () => void;
   submit: () => void;
+  executeCommandInTerminal: (command: string) => void;
+  runWithAIDebugger: (code: string, language: string) => void;
 };
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
@@ -158,24 +161,32 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const rightPanelRef = useRef<RightPanelRef>(null);
   const rightPanelLastSize = useRef<number>(35);
 
-  const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void) => {
+  const handleRunCode = async () => {
     if (!activeTab) {
       toast({ variant: 'destructive', title: 'No file selected', description: 'Please select a file to run.' });
       return;
     }
     
     setIsRunning(true);
-    setActiveRightPanelTab("output");
+    rightPanelRef.current?.runCode(); // This just sets the tab, actual logic is here
     toast({ title: `Running ${activeTab}...` });
 
     const fileToRun = findNode(activeTab, files);
-    
-    if (rightPanelRef.current) {
-      // The actual execution logic is now in the terminal view itself.
-      // We just need to trigger it.
-      (rightPanelRef.current as any).executeCommandInTerminal(`node ${fileToRun?.name}`);
+    if (!fileToRun || fileToRun.content === undefined) {
+        setIsRunning(false);
+        toast({ variant: 'destructive', title: 'File not found or empty.' });
+        return;
     }
 
+    const fileExtension = fileToRun.name.split('.').pop() || '';
+    
+    if (fileExtension === 'js') {
+        rightPanelRef.current?.executeCommandInTerminal(`node ${fileToRun.name}`);
+    } else {
+        const language = languageMap[fileExtension] || fileExtension;
+        rightPanelRef.current?.runWithAIDebugger(fileToRun.content, language);
+    }
+    
     // Simulate a delay for running
     await new Promise(resolve => setTimeout(resolve, 500));
     
@@ -183,9 +194,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     toast({ title: "Execution Finished", description: "Check the output panel." });
   };
 
-  const handleSubmit = async (setActiveRightPanelTab: (tab: string) => void) => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    setActiveRightPanelTab("tests");
+    rightPanelRef.current?.submit();
     toast({ title: "Submitting solution", description: "Running all test cases..." });
 
     setTestResults(prev => prev.map(t => ({...t, status: 'running'})));
@@ -267,15 +278,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
   
   const runCodeAction = () => {
-    if (rightPanelRef.current) {
-        (rightPanelRef.current as any).runCode();
-    }
+    handleRunCode();
   };
 
   const submitAction = () => {
-    if (rightPanelRef.current) {
-        (rightPanelRef.current as any).submit();
-    }
+    handleSubmit();
   };
 
   useEffect(() => {
@@ -745,8 +752,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       ref={rightPanelRef}
                       testResults={testResults}
                       files={files}
-                      handleRunCode={handleRunCode}
-                      handleSubmit={handleSubmit}
+                      handleRunCode={() => handleRunCode()}
+                      handleSubmit={() => handleSubmit()}
                       addFile={handleCreateFile}
                       addFolder={handleCreateFolder}
                       deleteNode={deleteNode}
@@ -764,5 +771,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
-    
