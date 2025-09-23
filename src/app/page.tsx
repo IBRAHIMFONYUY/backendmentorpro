@@ -2,17 +2,43 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FaDiscord, FaGithub, FaGoogle, FaNodeJs, FaPython, FaJava, FaAws, FaPhp, FaDocker, FaYoutube, FaTwitter } from 'react-icons/fa';
-import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt } from 'lucide-react';
+import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function Home() {
-    useEffect(() => {
-        // Most of the JS from the original file is for effects and interactivity
-        // that can be handled with React state or are decorative.
-        // For simplicity, we'll implement the counter animations.
+    const { toast } = useToast();
+    const [authModalOpen, setAuthModalOpen] = useState(false);
+    const [onboardingStep, setOnboardingStep] = useState(false);
+    const [aiModalOpen, setAiModalOpen] = useState(false);
+    const [apiMethod, setApiMethod] = useState('GET');
+    const [requestBodyVisible, setRequestBodyVisible] = useState(false);
+    const [apiUrl, setApiUrl] = useState('https://jsonplaceholder.typicode.com/posts');
+    const [apiRequestBody, setApiRequestBody] = useState('{"title": "Test Post", "body": "This is a test", "userId": 1}');
+    const [apiResponse, setApiResponse] = useState<any>(null);
+    const [isApiLoading, setIsApiLoading] = useState(false);
 
+
+    // Smooth scrolling for anchor links
+    useEffect(() => {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    }, []);
+
+    // Animate counters on component mount
+    useEffect(() => {
         function animateCounter(elementId: string, target: number, duration = 2000, suffix = '') {
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -30,12 +56,109 @@ export default function Home() {
             }, 16);
         }
 
-        animateCounter('developerCount', 52847);
-        animateCounter('challengeCount', 247);
-        animateCounter('successRate', 94, 2000, '%');
+        toast({ title: 'Loading real-time statistics...', description: "" });
+        setTimeout(() => {
+            animateCounter('developerCount', 52847);
+            animateCounter('challengeCount', 247);
+            animateCounter('successRate', 94, 2000, '%');
+        }, 1000);
 
-    }, []);
+    }, [toast]);
+    
+    const handleAuthModalOpen = () => {
+        setOnboardingStep(false);
+        setAuthModalOpen(true);
+    };
 
+    const handleOAuth = (provider: string) => {
+        toast({ title: `Redirecting to ${provider} OAuth...` });
+        setTimeout(() => {
+            toast({ title: `${provider} authentication successful!` });
+            setOnboardingStep(true);
+        }, 2000);
+    };
+
+    const handleEmailSignup = () => {
+        toast({ title: 'Creating your account...' });
+        setTimeout(() => {
+            toast({ title: 'Account created successfully!' });
+            setOnboardingStep(true);
+        }, 1500);
+    };
+
+    const handleCompleteOnboarding = () => {
+        toast({ title: 'Welcome! Starting your journey.' });
+        setAuthModalOpen(false);
+        setTimeout(() => {
+            toast({ title: 'Personalizing your dashboard...' });
+        }, 1500);
+    }
+    
+    const handleSetApiMethod = (method: string) => {
+        setApiMethod(method);
+        if (['POST', 'PUT'].includes(method)) {
+            setRequestBodyVisible(true);
+        } else {
+            setRequestBodyVisible(false);
+        }
+    };
+
+    const handleSendApiRequest = async () => {
+        if (!apiUrl) {
+            toast({ variant: 'destructive', title: 'Please enter an API endpoint' });
+            return;
+        }
+
+        setIsApiLoading(true);
+        setApiResponse(null);
+        toast({ title: 'Sending API request...' });
+
+        const startTime = Date.now();
+        try {
+            const options: RequestInit = {
+                method: apiMethod,
+                headers: { 'Content-Type': 'application/json' },
+            };
+
+            if (requestBodyVisible && apiRequestBody) {
+                try {
+                    options.body = JSON.stringify(JSON.parse(apiRequestBody));
+                } catch (e) {
+                    throw new Error('Invalid JSON in request body');
+                }
+            }
+
+            const res = await fetch(apiUrl, options);
+            const endTime = Date.now();
+
+            const data = await res.json();
+            setApiResponse({
+                status: res.status,
+                statusText: res.statusText,
+                time: endTime - startTime,
+                body: data
+            });
+            toast({ title: `API request completed (${res.status})` });
+
+        } catch (error: any) {
+            const endTime = Date.now();
+            setApiResponse({
+                status: 'Error',
+                statusText: '',
+                time: endTime - startTime,
+                body: { error: error.message }
+            });
+            toast({ variant: 'destructive', title: 'API request failed', description: error.message });
+        }
+        setIsApiLoading(false);
+    };
+
+    const handleClearApi = () => {
+        setApiUrl('https://jsonplaceholder.typicode.com/posts');
+        setApiRequestBody('{"title": "Test Post", "body": "This is a test", "userId": 1}');
+        setApiResponse(null);
+        toast({ title: 'Cleared API playground' });
+    }
 
   return (
     <div className="bg-dark-bg text-white overflow-x-hidden">
@@ -44,10 +167,12 @@ export default function Home() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-accent-blue to-accent-red rounded-xl flex items-center justify-center">
-                           <Code className="text-white text-lg" />
-                        </div>
-                        <span className="text-2xl font-bold gradient-text">BackendMentorAI</span>
+                         <Link href="/" className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-accent-blue to-accent-red rounded-xl flex items-center justify-center">
+                               <Code className="text-white text-lg" />
+                            </div>
+                            <span className="text-2xl font-bold gradient-text">BackendMentorAI</span>
+                        </Link>
                     </div>
                     <div className="hidden md:flex items-center space-x-8">
                         <a href="#challenges" className="hover:text-accent-blue transition-colors cursor-pointer font-medium">Challenges</a>
@@ -58,12 +183,12 @@ export default function Home() {
                         <a href="#docs" className="hover:text-accent-blue transition-colors cursor-pointer font-medium">Docs</a>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <Link href="/dashboard" id="loginBtn" className="px-6 py-2 text-accent-blue border border-accent-blue rounded-lg hover:bg-accent-blue hover:text-white transition-all font-medium">
+                        <Button onClick={handleAuthModalOpen} variant="outline" className="px-6 py-2 text-accent-blue border-accent-blue rounded-lg hover:bg-accent-blue hover:text-white transition-all font-medium">
                             Sign In
-                        </Link>
-                         <Link href="/dashboard" id="startFreeBtn" className="px-6 py-2 btn-primary text-white rounded-lg font-medium animate-pulse-glow">
+                        </Button>
+                         <Button onClick={handleAuthModalOpen} className="px-6 py-2 btn-primary text-white rounded-lg font-medium animate-pulse-glow">
                             Start Free
-                        </Link>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -86,11 +211,11 @@ export default function Home() {
                             </p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-6">
-                            <Button asChild id="exploreChallengesBtn" className="px-8 py-4 btn-primary text-white rounded-xl font-semibold text-lg flex items-center justify-center space-x-2 group">
-                                <Link href="#challenges"><Compass className="group-hover:rotate-180 transition-transform duration-300 h-5 w-5" /><span>Explore Challenges</span></Link>
+                             <Button asChild className="px-8 py-4 btn-primary text-white rounded-xl font-semibold text-lg flex items-center justify-center space-x-2 group">
+                                <a href="#challenges"><Compass className="group-hover:rotate-180 transition-transform duration-300 h-5 w-5" /><span>Explore Challenges</span></a>
                             </Button>
-                            <Button asChild id="startFreeHeroBtn" className="px-8 py-4 btn-secondary rounded-xl font-semibold text-lg flex items-center justify-center space-x-2">
-                                <Link href="/dashboard"><Play className="h-5 w-5" /><span>Start Free</span></Link>
+                             <Button onClick={handleAuthModalOpen} className="px-8 py-4 btn-secondary rounded-xl font-semibold text-lg flex items-center justify-center space-x-2">
+                                <Play className="h-5 w-5" /><span>Start Free</span>
                             </Button>
                         </div>
                         <div className="grid grid-cols-3 gap-8 pt-8">
@@ -154,29 +279,12 @@ export default function Home() {
                                 </div>
                                 <div className="p-4 bg-dark-surface border-t border-dark-border flex justify-between items-center">
                                     <div className="flex space-x-3">
-                                        <button id="runCodeBtn" className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center space-x-2"><Play className="h-4 w-4" /><span>Run Code</span></button>
-                                        <button id="aiHelpBtn" className="px-4 py-2 bg-accent-purple text-white rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center space-x-2"><Bot className="h-4 w-4" /><span>AI Help</span></button>
-                                        <button id="shareCodeBtn" className="px-4 py-2 bg-accent-blue text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center space-x-2"><Share className="h-4 w-4" /><span>Share</span></button>
+                                        <Button onClick={() => toast({ title: 'Code execution simulated!' })} className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center space-x-2"><Play className="h-4 w-4" /><span>Run Code</span></Button>
+                                        <Button onClick={() => setAiModalOpen(true)} className="px-4 py-2 bg-accent-purple text-white rounded-lg text-sm hover:bg-purple-600 transition-colors flex items-center space-x-2"><Bot className="h-4 w-4" /><span>AI Help</span></Button>
+                                        <Button onClick={() => { navigator.clipboard.writeText('https://backendmentor.dev/share/xyz'); toast({ title: 'Share link copied!' })}} className="px-4 py-2 bg-accent-blue text-white rounded-lg text-sm hover:bg-blue-600 transition-colors flex items-center space-x-2"><Share className="h-4 w-4" /><span>Share</span></Button>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm text-gray-400">
                                         <CheckCircle className="text-accent-green h-4 w-4" /><span>Tests: 12/12</span>
-                                    </div>
-                                </div>
-                                <div id="codeOutput" className="hidden">
-                                    <div className="terminal-output">
-                                        <div className="flex items-center space-x-2 mb-2">
-                                            <Terminal className="text-accent-green h-4 w-4" />
-                                            <span className="text-accent-green">Terminal Output</span>
-                                        </div>
-                                        <div id="terminalContent">
-                                            <div>🚀 Server starting...</div>
-                                            <div>✅ Database connected successfully</div>
-                                            <div>✅ Middleware loaded</div>
-                                            <div>✅ Routes registered</div>
-                                            <div>🚀 Server running on port 3000</div>
-                                            <div>✅ All tests passed (12/12)</div>
-                                            <div className="text-accent-blue">Ready to accept connections!</div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -186,19 +294,19 @@ export default function Home() {
             </div>
         </section>
 
-        <section id="challenges" className="py-20 px-4 sm:px-6 lg:px-8 gradient-bg">
+        <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 gradient-bg">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16 animate-fade-in-up">
                     <h2 className="text-5xl font-bold mb-6">Revolutionary <span className="gradient-text">Learning Experience</span></h2>
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto">AI Assistant, Live Editor, API Playground, and Real-time Collaboration - All in One Innovative Platform</p>
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8 mb-16">
-                    <div className="feature-card glass-effect rounded-2xl p-8 cursor-pointer group" id="aiFeatureCard">
+                    <div onClick={() => setAiModalOpen(true)} className="feature-card glass-effect rounded-2xl p-8 cursor-pointer group" id="aiFeatureCard">
                         <div className="w-20 h-20 bg-gradient-to-r from-accent-blue to-accent-purple rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><Bot className="text-white text-3xl h-10 w-10" /></div>
                         <h3 className="text-2xl font-bold mb-4">AI Mentor Assistant</h3>
                         <p className="text-gray-300 mb-6 leading-relaxed">Context-aware AI that provides real-time hints, debugging help, code reviews, and explains complex concepts with personalized learning paths.</p>
                         <div className="flex items-center justify-between">
-                            <button className="px-6 py-3 bg-accent-blue/20 text-accent-blue rounded-xl hover:bg-accent-blue hover:text-white transition-all font-medium">Try AI Assistant</button>
+                             <Button onClick={(e) => {e.stopPropagation(); setAiModalOpen(true);}} className="px-6 py-3 bg-accent-blue/20 text-accent-blue rounded-xl hover:bg-accent-blue hover:text-white transition-all font-medium">Try AI Assistant</Button>
                             <div className="flex items-center space-x-1 text-sm text-gray-400"><Star className="text-yellow-400 h-4 w-4" /><span>4.9/5</span></div>
                         </div>
                     </div>
@@ -207,7 +315,7 @@ export default function Home() {
                         <h3 className="text-2xl font-bold mb-4">Live Coding Environment</h3>
                         <p className="text-gray-300 mb-6 leading-relaxed">Monaco Editor with IntelliSense, syntax highlighting, real-time collaboration, instant code execution, and integrated debugging tools.</p>
                         <div className="flex items-center justify-between">
-                            <button className="px-6 py-3 bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red hover:text-white transition-all font-medium">Open Live Editor</button>
+                            <Button onClick={() => toast({title: "Live editor coming soon!"})} className="px-6 py-3 bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red hover:text-white transition-all font-medium">Open Live Editor</Button>
                             <div className="flex items-center space-x-1 text-sm text-gray-400"><Users className="h-4 w-4" /><span>Real-time</span></div>
                         </div>
                     </div>
@@ -216,7 +324,9 @@ export default function Home() {
                         <h3 className="text-2xl font-bold mb-4">API Playground</h3>
                         <p className="text-gray-300 mb-6 leading-relaxed">Built-in Postman-like interface for testing APIs, viewing responses, debugging endpoints, and generating API documentation automatically.</p>
                         <div className="flex items-center justify-between">
-                            <button className="px-6 py-3 bg-accent-purple/20 text-accent-purple rounded-xl hover:bg-accent-purple hover:text-white transition-all font-medium">Launch Playground</button>
+                             <Button asChild className="px-6 py-3 bg-accent-purple/20 text-accent-purple rounded-xl hover:bg-accent-purple hover:text-white transition-all font-medium">
+                                <a href="#playground">Launch Playground</a>
+                            </Button>
                             <div className="flex items-center space-x-1 text-sm text-gray-400"><Bolt className="h-4 w-4" /><span>Instant</span></div>
                         </div>
                     </div>
@@ -257,39 +367,43 @@ export default function Home() {
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-2xl font-bold">API Testing Playground</h3>
                             <div className="flex space-x-2">
-                                <button id="getBtn" className="px-4 py-2 bg-accent-green text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">GET</button>
-                                <button id="postBtn" className="px-4 py-2 bg-accent-blue text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">POST</button>
-                                <button id="putBtn" className="px-4 py-2 bg-accent-purple text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors">PUT</button>
-                                <button id="deleteBtn" className="px-4 py-2 bg-accent-red text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">DELETE</button>
+                                <Button onClick={() => handleSetApiMethod('GET')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${apiMethod === 'GET' ? 'bg-accent-green text-white' : 'bg-gray-600 hover:bg-green-600'}`}>GET</Button>
+                                <Button onClick={() => handleSetApiMethod('POST')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${apiMethod === 'POST' ? 'bg-accent-blue text-white' : 'bg-gray-600 hover:bg-blue-600'}`}>POST</Button>
+                                <Button onClick={() => handleSetApiMethod('PUT')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${apiMethod === 'PUT' ? 'bg-accent-purple text-white' : 'bg-gray-600 hover:bg-purple-600'}`}>PUT</Button>
+                                <Button onClick={() => handleSetApiMethod('DELETE')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${apiMethod === 'DELETE' ? 'bg-accent-red text-white' : 'bg-gray-600 hover:bg-red-600'}`}>DELETE</Button>
                             </div>
                         </div>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2">API Endpoint</label>
                                 <div className="relative">
-                                    <input id="apiUrl" type="text" defaultValue="https://jsonplaceholder.typicode.com/posts" className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-white focus:border-accent-blue focus:outline-none font-mono" />
+                                    <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} type="text" className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-white focus:border-accent-blue focus:outline-none font-mono" />
                                 </div>
                             </div>
-                            <div id="requestBody" className="hidden">
-                                <label className="block text-sm font-medium mb-2">Request Body (JSON)</label>
-                                <textarea className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-white focus:border-accent-blue focus:outline-none font-mono h-24" placeholder='{"title": "Test Post", "body": "This is a test", "userId": 1}'></textarea>
-                            </div>
+                             {requestBodyVisible && (
+                                <div id="requestBody">
+                                    <label className="block text-sm font-medium mb-2">Request Body (JSON)</label>
+                                    <textarea value={apiRequestBody} onChange={(e) => setApiRequestBody(e.target.value)} className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-white focus:border-accent-blue focus:outline-none font-mono h-24" placeholder='{"title": "Test Post", "body": "This is a test", "userId": 1}'></textarea>
+                                </div>
+                            )}
                             <div className="flex space-x-3">
-                                <button id="sendRequestBtn" className="flex-1 px-6 py-3 btn-primary text-white rounded-xl font-medium flex items-center justify-center space-x-2"><Send className="h-4 w-4" /><span>Send Request</span></button>
-                                <button id="clearBtn" className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"><Trash className="h-4 w-4" /></button>
+                                 <Button onClick={handleSendApiRequest} disabled={isApiLoading} className="flex-1 px-6 py-3 btn-primary text-white rounded-xl font-medium flex items-center justify-center space-x-2"><Send className="h-4 w-4" /><span>Send Request</span></Button>
+                                <Button onClick={handleClearApi} variant="secondary" className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors"><Trash className="h-4 w-4" /></Button>
                             </div>
-                            <div id="apiResponse" className="hidden">
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-sm font-medium">Response</label>
-                                    <div className="flex items-center space-x-2">
-                                        <span id="responseStatus" className="px-2 py-1 bg-accent-green text-white rounded text-xs font-medium">200 OK</span>
-                                        <span id="responseTime" className="text-xs text-gray-400">245ms</span>
+                           {apiResponse && (
+                                <div id="apiResponse">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="block text-sm font-medium">Response</label>
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${apiResponse.status >= 200 && apiResponse.status < 300 ? 'bg-accent-green text-white' : 'bg-accent-red text-white'}`}>{apiResponse.status} {apiResponse.statusText}</span>
+                                            <span className="text-xs text-gray-400">{apiResponse.time}ms</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-dark-bg border border-dark-border rounded-xl p-4 max-h-64 overflow-y-auto">
+                                        <pre className="text-sm font-mono text-gray-300">{JSON.stringify(apiResponse.body, null, 2)}</pre>
                                     </div>
                                 </div>
-                                <div className="bg-dark-bg border border-dark-border rounded-xl p-4 max-h-64 overflow-y-auto">
-                                    <pre id="responseContent" className="text-sm font-mono text-gray-300"></pre>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                     <div className="glass-effect rounded-2xl p-8">
@@ -421,7 +535,7 @@ export default function Home() {
                             <li className="flex items-center space-x-3"><CheckCircle className="text-accent-green h-5 w-5" /><span>Community access</span></li>
                             <li className="flex items-center space-x-3"><CheckCircle className="text-accent-green h-5 w-5" /><span>Progress tracking</span></li>
                         </ul>
-                        <Button asChild className="w-full" variant="outline"><Link href="/dashboard">Get Started Free</Link></Button>
+                        <Button onClick={handleAuthModalOpen} className="w-full" variant="outline">Get Started Free</Button>
                     </div>
                     <div className="glass-effect rounded-2xl p-8 border-2 border-accent-blue relative hover:scale-105 transition-transform">
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-accent-blue text-white rounded-full text-sm font-medium">Most Popular</div>
@@ -437,7 +551,7 @@ export default function Home() {
                             <li className="flex items-center space-x-3"><CheckCircle className="text-accent-green h-5 w-5" /><span>Priority support</span></li>
                             <li className="flex items-center space-x-3"><CheckCircle className="text-accent-green h-5 w-5" /><span>Certificate of completion</span></li>
                         </ul>
-                        <Button asChild className="w-full btn-primary"><Link href="/dashboard">Start Pro Trial</Link></Button>
+                        <Button onClick={handleAuthModalOpen} className="w-full btn-primary">Start Pro Trial</Button>
                     </div>
                     <div className="glass-effect rounded-2xl p-8 hover:scale-105 transition-transform">
                         <div className="text-center mb-8">
@@ -452,7 +566,7 @@ export default function Home() {
                              <li className="flex items-center space-x-3"><CheckCircle className="text-accent-green h-5 w-5" /><span>Analytics dashboard</span></li>
                              <li className="flex items-center space-x-3"><CheckCircle className="text-accent-green h-5 w-5" /><span>Dedicated support</span></li>
                         </ul>
-                        <Button asChild className="w-full" variant="outline"><Link href="/dashboard">Contact Sales</Link></Button>
+                        <Button onClick={handleAuthModalOpen} className="w-full" variant="outline">Contact Sales</Button>
                     </div>
                 </div>
             </div>
@@ -491,8 +605,8 @@ export default function Home() {
                     </div>
                 </div>
                 <div className="text-center">
-                    <Button asChild id="joinCommunityBtn" className="px-8 py-4 btn-primary text-white rounded-xl font-semibold text-lg">
-                        <Link href="#"><Users className="mr-2 h-5 w-5" />Join Community</Link>
+                    <Button onClick={() => toast({ title: 'Joining community...' })} className="px-8 py-4 btn-primary text-white rounded-xl font-semibold text-lg">
+                        <Users className="mr-2 h-5 w-5" />Join Community
                     </Button>
                 </div>
             </div>
@@ -526,6 +640,55 @@ export default function Home() {
                 </div>
             </div>
         </section>
+
+        {/* Auth Modal */}
+        {authModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                <div className="modal-content glass-effect rounded-2xl p-8 max-w-md w-full relative">
+                    <Button onClick={() => setAuthModalOpen(false)} variant="ghost" size="icon" className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                        <X />
+                    </Button>
+                    {!onboardingStep ? (
+                        <div id="authStep1" className="space-y-6">
+                            <h2 className="text-3xl font-bold gradient-text text-center">Join Backend Mentor</h2>
+                            <div className="space-y-4">
+                                <Button onClick={() => handleOAuth('GitHub')} className="w-full bg-gray-800 hover:bg-gray-700 text-white py-6 text-base"><FaGithub className="mr-2" /> Continue with GitHub</Button>
+                                <Button onClick={() => handleOAuth('Google')} className="w-full bg-white hover:bg-gray-200 text-gray-900 py-6 text-base"><FaGoogle className="mr-2" /> Continue with Google</Button>
+                            </div>
+                            <div className="relative"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-dark-border" /></div><div className="relative flex justify-center text-sm"><span className="px-2 bg-dark-surface text-gray-400">or</span></div></div>
+                            <div className="space-y-4">
+                                <input type="email" placeholder="Enter your email" className="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-white focus:border-accent-blue focus:outline-none" />
+                                <Button onClick={handleEmailSignup} className="w-full py-6 btn-primary">Create Account</Button>
+                            </div>
+                        </div>
+                    ) : (
+                         <div id="onboardingStep" className="space-y-6">
+                            <h3 className="text-2xl font-bold text-center">Customize Your Experience</h3>
+                             {/* Simplified onboarding for brevity */}
+                            <Button onClick={handleCompleteOnboarding} className="w-full py-6 bg-gradient-to-r from-accent-blue to-accent-red">🚀 Start My Journey</Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
+
+         {/* AI Modal */}
+        {aiModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                 <div className="modal-content glass-effect rounded-2xl p-6 max-w-lg w-full relative">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-2xl font-bold flex items-center gap-2"><Bot />AI Mentor Assistant</h2>
+                        <Button onClick={() => setAiModalOpen(false)} variant="ghost" size="icon" className="absolute top-4 right-4 text-gray-400 hover:text-white"><X /></Button>
+                    </div>
+                    {/* Simplified AI chat for brevity */}
+                    <div className="h-64 bg-dark-bg rounded-lg p-4 text-gray-400">AI chat placeholder...</div>
+                     <div className="mt-4 flex gap-2">
+                        <input type="text" placeholder="Ask the AI..." className="flex-grow bg-dark-bg border border-dark-border rounded-lg px-4" />
+                        <Button className="btn-primary">Send</Button>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 }
