@@ -8,7 +8,7 @@ export default function ApiPlaygroundPage() {
     const defaultChallenge = challenges[0];
 
     return (
-        <div className="h-[calc(100vh-10rem)] -m-8">
+        <div className="h-[calc(100vh-5rem)] -m-8">
             <CodeIdeView challenge={defaultChallenge} />
         </div>
     );
