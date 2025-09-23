@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { ApiPlaygroundView } from '../api-playground-view';
 import { CheckCircle, FlaskConical, Loader2, Terminal as TerminalIcon, TestTube, XCircle } from 'lucide-react';
 import { TerminalView } from './terminal-view';
@@ -11,10 +11,12 @@ interface RightPanelProps {
     files: FileSystemNode;
     handleRunCode: (setActiveRightPanelTab: (tab: string) => void, setTerminalOutput: (updater: (prev: any[]) => any[]) => void) => void;
     handleSubmit: (setActiveRightPanelTab: (tab: string) => void) => void;
+    addNode: (path: string) => void;
+    deleteNode: (path: string) => void;
 }
 
 export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
-    const { testResults, files, handleRunCode, handleSubmit } = props;
+    const { testResults, files, handleRunCode, handleSubmit, addNode, deleteNode } = props;
     const [activeTab, setActiveTab] = useState('output');
     const [terminalOutput, setTerminalOutput] = useState([
         { type: 'output', content: 'Welcome to Backend Mentor Terminal' },
@@ -54,10 +56,10 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
                   )}
                    {activeTab === 'output' && (
                         <TerminalView 
-                            terminalOutput={terminalOutput}
-                            setTerminalOutput={setTerminalOutput}
                             files={files}
                             onRunTests={() => handleSubmit(setActiveTab)}
+                            addNode={addNode}
+                            deleteNode={deleteNode}
                         />
                   )}
                   {activeTab === 'api' && (
