@@ -14,35 +14,75 @@ import { FileExplorer } from "./ide/file-explorer";
 import { EditorPanel } from "./ide/editor-panel";
 import { RightPanel } from "./ide/right-panel";
 import { IdeStatusBar } from "./ide/ide-status-bar";
-import { SettingsModal } from "./ide/settings-modal";
+import { SettingsModal, type IdeSettings } from "./ide/settings-modal";
 import { CommandPalette } from "./ide/command-palette";
+import { CreateFileModal } from "./ide/create-file-modal";
+import { CreateFolderModal } from "./ide/create-folder-modal";
+
+
+const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
+    if (node.path === path) return node;
+    if (node.children) {
+        for (const child of node.children) {
+            const found = findNode(path, child);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+const addNode = (tree: FileSystemNode, path: string, type: 'file' | 'folder'): FileSystemNode => {
+    const parts = path.split('/').filter(p => p);
+    let currentNode = tree;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i];
+        let childNode = currentNode.children?.find(c => c.name === part);
+        if (childNode && childNode.type === 'folder') {
+            currentNode = childNode;
+        } else {
+            console.error("Invalid path");
+            return tree; // Path is invalid
+        }
+    }
+
+    const newNodeName = parts[parts.length - 1];
+    if (currentNode.children?.some(c => c.name === newNodeName)) {
+        return tree; // Node already exists
+    }
+
+    const newNode: FileSystemNode = {
+        name: newNodeName,
+        type,
+        path: (currentNode.path === '/' ? '' : currentNode.path) + '/' + newNodeName,
+        children: type === 'folder' ? [] : undefined,
+        content: type === 'file' ? '' : undefined,
+    };
+
+    currentNode.children = [...(currentNode.children || []), newNode];
+    return { ...tree };
+};
+
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [files, setFiles] = useState<FileSystemNode>(initialFiles);
   const [openTabs, setOpenTabs] = useState<string[]>(['/server.js']);
   const [activeTab, setActiveTab] = useState('/server.js');
   const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set(['/']));
   
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [createFileModalOpen, setCreateFileModalOpen] = useState(false);
+  const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
   
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState<IdeSettings | null>(null);
   
   const { toast } = useToast();
-
-  const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
-      if (node.path === path) return node;
-      if (node.children) {
-          for (const child of node.children) {
-              const found = findNode(path, child);
-              if (found) return found;
-          }
-      }
-      return null;
-  }
   
   const activeFileContent = findNode(activeTab, files)?.content ?? '';
 
@@ -98,6 +138,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
 
   const handleFileSelect = (path: string) => {
+    const node = findNode(path, files);
+    if(node?.type !== 'file') return;
+
     if (!openTabs.includes(path)) {
       setOpenTabs(prev => [...prev, path]);
     }
@@ -121,7 +164,12 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       case 'openSettings':
         setSettingsModalOpen(true);
         break;
-      // Add more command executions here
+      case 'createFile':
+        setCreateFileModalOpen(true);
+        break;
+      case 'createFolder':
+        setCreateFolderModalOpen(true);
+        break;
       default:
         toast({ title: "Command not recognized", variant: "destructive" });
     }
@@ -130,7 +178,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setCommandPaletteOpen(v => !v);
       }
@@ -144,12 +192,67 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Dummy ref for now, will connect to editor later
-  const editorRef = { current: null }; 
-  const onSettingsChange = (settings: any) => {
-    console.log("Settings changed:", settings);
+  const onSettingsChange = (newSettings: IdeSettings) => {
+    setSettings(newSettings);
     // Here you would apply settings to the Monaco editor instance
-    // For example: editorRef.current?.updateOptions({ fontSize: settings.fontSize });
+    // For example: editorRef.current?.updateOptions({ fontSize: newSettings.fontSize });
+    toast({ title: "Settings Updated", description: "Your changes have been applied." });
+  };
+  
+  const handleCreateFile = (path: string) => {
+      if (!path || !path.includes('.')) {
+          toast({ variant: 'destructive', title: 'Invalid File Name', description: 'Please provide a valid file name with an extension.'});
+          return;
+      }
+      setFiles(prevFiles => addNode(prevFiles, path, 'file'));
+      handleFileSelect(path);
+      toast({ title: "File created!", description: `File "${path}" was created successfully.` });
+      setCreateFileModalOpen(false);
+  }
+
+  const handleCreateFolder = (path: string) => {
+       if (!path || path.includes('.')) {
+          toast({ variant: 'destructive', title: 'Invalid Folder Name', description: 'Please provide a valid folder name.'});
+          return;
+      }
+      setFiles(prevFiles => addNode(prevFiles, path, 'folder'));
+      toast({ title: "Folder created!", description: `Folder "${path}" was created successfully.` });
+      setCreateFolderModalOpen(false);
+  }
+  
+  const handleRefresh = () => {
+    setFiles({...files}); // simple trick to force re-render
+    toast({ title: "File explorer refreshed" });
+  }
+
+  const handleCollapseAll = () => {
+    setOpenFolders(new Set(['/'])); // Only root is open
+    toast({ title: "All folders collapsed" });
+  };
+
+  const handleExpandAll = () => {
+      const allFolderPaths = new Set<string>();
+      const recurse = (node: FileSystemNode) => {
+          if (node.type === 'folder') {
+              allFolderPaths.add(node.path);
+              node.children?.forEach(recurse);
+          }
+      };
+      recurse(files);
+      setOpenFolders(allFolderPaths);
+      toast({ title: "All folders expanded" });
+  };
+
+  const toggleFolder = (path: string) => {
+      setOpenFolders(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(path)) {
+          newSet.delete(path);
+        } else {
+          newSet.add(path);
+        }
+        return newSet;
+      });
   };
 
   return (
@@ -163,6 +266,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         onSettingsChange={onSettingsChange}
       />
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
+      <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} />
+      <CreateFolderModal isOpen={createFolderModalOpen} onClose={() => setCreateFolderModalOpen(false)} onCreate={handleCreateFolder} />
+
 
       <div className="h-screen w-screen flex flex-col bg-background ide-body">
         <IdeTopBar 
@@ -192,6 +298,13 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       activeTab={activeTab}
                       onFileSelect={handleFileSelect}
                       testResults={testResults}
+                      onNewFile={() => setCreateFileModalOpen(true)}
+                      onNewFolder={() => setCreateFolderModalOpen(true)}
+                      onRefresh={handleRefresh}
+                      onCollapseAll={handleCollapseAll}
+                      onExpandAll={handleExpandAll}
+                      openFolders={openFolders}
+                      toggleFolder={toggleFolder}
                   />
               </ResizablePanel>
               <ResizableHandle withHandle className="hidden md:flex"/>
@@ -206,6 +319,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       onCloseTab={handleCloseTab}
                       files={files}
                       onCodeChange={handleCodeChange}
+                      editorSettings={settings}
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
@@ -226,5 +340,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
-    

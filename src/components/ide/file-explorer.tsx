@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus, ChevronsRightLeft } from 'lucide-react';
+import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus, ChevronsRightLeft, Rows, Columns } from 'lucide-react';
 import type { FileSystemNode, TestResult } from '@/lib/ide-data';
 
 interface FileExplorerProps {
@@ -10,11 +10,28 @@ interface FileExplorerProps {
     activeTab: string;
     onFileSelect: (path: string) => void;
     testResults: TestResult[];
+    onNewFile: () => void;
+    onNewFolder: () => void;
+    onRefresh: () => void;
+    onCollapseAll: () => void;
+    onExpandAll: () => void;
+    openFolders: Set<string>;
+    toggleFolder: (path: string) => void;
 }
 
-export function FileExplorer({ files, activeTab, onFileSelect, testResults }: FileExplorerProps) {
-    const [openFolders, setOpenFolders] = useState<Set<string>>(new Set(['/']));
-    
+export function FileExplorer({ 
+    files, 
+    activeTab, 
+    onFileSelect, 
+    testResults,
+    onNewFile,
+    onNewFolder,
+    onRefresh,
+    onCollapseAll,
+    onExpandAll,
+    openFolders,
+    toggleFolder
+}: FileExplorerProps) {
     const passedTests = testResults.filter(r => r.status === 'passed').length;
     const totalTests = testResults.length;
     const progressValue = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
@@ -26,37 +43,26 @@ export function FileExplorer({ files, activeTab, onFileSelect, testResults }: Fi
         return <File className="h-4 w-4 text-muted-foreground shrink-0" />;
     }
 
-    const toggleFolder = (path: string) => {
-      setOpenFolders(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(path)) {
-          newSet.delete(path);
-        } else {
-          newSet.add(path);
-        }
-        return newSet;
-      });
-    }
-
-    const FileTree = ({ node, level = 0, pathPrefix = '' }: { node: FileSystemNode, level?: number, pathPrefix?: string }) => {
-        const isFolder = node.type === 'folder';
-        const currentPath = `${pathPrefix}${node.name}`;
-        
-        if (isFolder) {
-          const isOpen = openFolders.has(currentPath);
+    const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
+        if (node.type === 'folder') {
+          const isOpen = openFolders.has(node.path);
           return (
             <div className="text-sm">
                 <div 
                     className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer`}
                     style={{ paddingLeft: `${level * 0.5}rem` }}
-                    onClick={() => toggleFolder(currentPath)}
+                    onClick={() => toggleFolder(node.path)}
                 >
                     {isOpen ? <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" /> : <Folder className="h-4 w-4 text-blue-400 shrink-0" />}
                     <span className="truncate">{node.name}</span>
                 </div>
                 {isOpen && node.children && (
                     <div className="pl-2">
-                        {node.children.map(child => <FileTree key={child.path} node={child} level={level + 1} pathPrefix={`${currentPath}/`} />)}
+                        {node.children.sort((a,b) => {
+                            if (a.type === 'folder' && b.type !== 'folder') return -1;
+                            if (a.type !== 'folder' && b.type === 'folder') return 1;
+                            return a.name.localeCompare(b.name);
+                        }).map(child => <FileTree key={child.path} node={child} level={level + 1} />)}
                     </div>
                 )}
             </div>
@@ -82,10 +88,11 @@ export function FileExplorer({ files, activeTab, onFileSelect, testResults }: Fi
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold tracking-wide uppercase">Explorer</h3>
                 <div className="flex space-x-2">
-                    <button className="text-gray-400 hover:text-white" title="New File"><FilePlus className="h-4 w-4" /></button>
-                    <button className="text-gray-400 hover:text-white" title="New Folder"><FolderPlus className="h-4 w-4" /></button>
-                    <button className="text-gray-400 hover:text-white" title="Refresh"><RefreshCw className="h-4 w-4" /></button>
-                     <button className="text-gray-400 hover:text-white" title="Collapse All"><ChevronsRightLeft className="h-4 w-4 rotate-90" /></button>
+                    <button onClick={onNewFile} className="text-gray-400 hover:text-white" title="New File"><FilePlus className="h-4 w-4" /></button>
+                    <button onClick={onNewFolder} className="text-gray-400 hover:text-white" title="New Folder"><FolderPlus className="h-4 w-4" /></button>
+                    <button onClick={onRefresh} className="text-gray-400 hover:text-white" title="Refresh"><RefreshCw className="h-4 w-4" /></button>
+                    <button onClick={onExpandAll} className="text-gray-400 hover:text-white" title="Expand All"><Rows className="h-4 w-4" /></button>
+                    <button onClick={onCollapseAll} className="text-gray-400 hover:text-white" title="Collapse All"><Columns className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
