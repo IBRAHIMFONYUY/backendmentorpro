@@ -11,7 +11,7 @@ interface RightPanelProps {
     files: FileSystemNode;
     handleRunCode: (setActiveRightPanelTab: (tab: string) => void, setTerminalOutput: (updater: (prev: any[]) => any[]) => void) => void;
     handleSubmit: (setActiveRightPanelTab: (tab: string) => void) => void;
-    addNode: (path: string) => void;
+    addNode: (path: string, type: 'file' | 'folder') => void;
     deleteNode: (path: string) => void;
 }
 
@@ -74,5 +74,3 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
 });
 
 RightPanel.displayName = "RightPanel";
-
-    

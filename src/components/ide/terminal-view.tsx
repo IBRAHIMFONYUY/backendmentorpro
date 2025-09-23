@@ -1,11 +1,13 @@
 
+"use client";
+
 import { useState, useRef, useEffect } from 'react';
 import type { FileSystemNode } from '@/lib/ide-data';
 
 interface TerminalViewProps {
     files: FileSystemNode;
     onRunTests: () => void;
-    addNode: (path: string) => void;
+    addNode: (path: string, type: 'file' | 'folder') => void;
     deleteNode: (path: string) => void;
 }
 
@@ -41,7 +43,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode }: Termina
         
         switch(cmd) {
             case 'help':
-                output.push({type: 'output', content: `Available commands: ls, cd, cat, clear, test, node, echo, whoami, pwd, mkdir, touch, rm`});
+                output.push({type: 'output', content: `Available commands: ls, cat, clear, test, node, echo, whoami, pwd, mkdir, touch, rm`});
                 break;
             case 'clear':
                 setTerminalOutput([]);
@@ -57,7 +59,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode }: Termina
                 output.push({type: 'output', content: content || '(empty)'});
                 break;
              case 'cd':
-                output.push({type: 'error', content: 'cd: Not implemented yet'});
+                output.push({type: 'error', content: 'cd: Not implemented yet. Current directory is always root.'});
                 break;
             case 'cat':
                 const fileToCat = files.children?.find(f => f.name === args[1] && f.type === 'file');
@@ -72,8 +74,15 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode }: Termina
                  if (fileToRun?.content) {
                     output.push({type: 'output', content: `Executing ${args[1]}...`});
                     if(fileToRun.content.includes("console.log")) {
-                        const match = fileToRun.content.match(/console.log\((.*)\)/);
-                        output.push({type: 'output', content: match ? match[1].replace(/['"`]/g, '') : "No output"});
+                        const matches = fileToRun.content.matchAll(/console.log\((.*?)\)/g);
+                        let hasOutput = false;
+                        for (const match of matches) {
+                           output.push({type: 'output', content: match ? match[1].replace(/['"`]/g, '') : "No output"});
+                           hasOutput = true;
+                        }
+                         if (!hasOutput) {
+                            output.push({type: 'output', content: 'Execution finished with no output.'});
+                         }
                     } else {
                         output.push({type: 'output', content: 'Execution finished with no output.'});
                     }
@@ -92,7 +101,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode }: Termina
                 break;
             case 'mkdir':
                 if (args[1]) {
-                    addNode(args[1] + '/'); // Not quite right, needs to be a folder
+                    addNode(args[1], 'folder');
                     output.push({type: 'output', content: `mkdir: created directory '${args[1]}'`});
                 } else {
                     output.push({type: 'error', content: 'mkdir: missing operand'});
@@ -100,7 +109,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode }: Termina
                 break;
             case 'touch':
                  if (args[1]) {
-                    addNode(args[1]);
+                    addNode(args[1], 'file');
                     output.push({type: 'output', content: `touch: created file '${args[1]}'`});
                 } else {
                     output.push({type: 'error', content: 'touch: missing operand'});
@@ -108,7 +117,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode }: Termina
                 break;
             case 'rm':
                  if (args[1]) {
-                    deleteNode(args[1]);
+                    deleteNode('/' + args[1]);
                     output.push({type: 'output', content: `rm: removed '${args[1]}'`});
                 } else {
                     output.push({type: 'error', content: 'rm: missing operand'});
