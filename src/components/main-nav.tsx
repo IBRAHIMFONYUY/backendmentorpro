@@ -26,10 +26,10 @@ const mainNavItems = [
 ];
 
 const aiToolsNavItems = [
-  { href: "#", icon: Bot, label: "AI Assistant" },
-  { href: "#", icon: FileCode, label: "AI Code Review" },
-  { href: "#", label: "Project Ideas", icon: Lightbulb },
-  { href: "#", label: "Tech Advisor", icon: BrainCircuit },
+  { href: "/ai-assistant", icon: Bot, label: "AI Assistant" },
+  { href: "/ai-code-reviewer", icon: FileCode, label: "AI Code Review" },
+  { href: "/project-ideas", label: "Project Ideas", icon: Lightbulb },
+  { href: "/tech-advisor", label: "Tech Advisor", icon: BrainCircuit },
 ];
 
 const userNavItems = [

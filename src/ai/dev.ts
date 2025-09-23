@@ -8,3 +8,5 @@ import '@/ai/flows/provide-real-time-code-assistance.ts';
 import '@/ai/flows/generate-debugging-assistance.ts';
 import '@/ai/flows/mentor-chat.ts';
 import '@/ai/flows/review-challenge-submission.ts';
+import '@/ai/flows/generate-project-ideas.ts';
+import '@/ai/flows/tech-advisor.ts';
