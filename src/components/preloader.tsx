@@ -4,47 +4,31 @@ import { useEffect } from 'react';
 
 const Preloader = () => {
   useEffect(() => {
-    // This is a client component, we can use useEffect
     const container = document.querySelector('.preloader-container');
     if (!container) return;
 
-    // Clean up any previous dots to avoid duplicates on re-render in dev mode
     const existingDots = container.querySelectorAll('.forming-dot');
     existingDots.forEach(dot => dot.remove());
 
-    // Create dots that form letters B and M
     function createFormingDots() {
         if (!container) return;
 
-        // Define precise dot positions for letter B (left side of screen)
         const bDots = [
-            // Left vertical line
             {x: -150, y: -80}, {x: -150, y: -60}, {x: -150, y: -40}, {x: -150, y: -20}, 
             {x: -150, y: 0}, {x: -150, y: 20}, {x: -150, y: 40}, {x: -150, y: 60}, {x: -150, y: 80},
-            // Top horizontal line
             {x: -130, y: -80}, {x: -110, y: -80}, {x: -90, y: -80},
-            // Top curve
             {x: -70, y: -60}, {x: -70, y: -40},
-            // Middle horizontal line
             {x: -130, y: -20}, {x: -110, y: -20}, {x: -90, y: -20}, {x: -70, y: -20},
-            // Bottom curve
             {x: -70, y: 0}, {x: -70, y: 20}, {x: -70, y: 40},
-            // Bottom horizontal line
             {x: -130, y: 80}, {x: -110, y: 80}, {x: -90, y: 80}
         ];
         
-        // Define precise dot positions for letter M (right side of screen)
         const mDots = [
-            // Left vertical line
             {x: 50, y: -80}, {x: 50, y: -60}, {x: 50, y: -40}, {x: 50, y: -20}, 
             {x: 50, y: 0}, {x: 50, y: 20}, {x: 50, y: 40}, {x: 50, y: 60}, {x: 50, y: 80},
-            // Left diagonal
             {x: 70, y: -60}, {x: 90, y: -40}, {x: 110, y: -20},
-            // Center point
             {x: 130, y: 0},
-            // Right diagonal
             {x: 150, y: -20}, {x: 170, y: -40}, {x: 190, y: -60},
-            // Right vertical line
             {x: 210, y: -80}, {x: 210, y: -60}, {x: 210, y: -40}, {x: 210, y: -20}, 
             {x: 210, y: 0}, {x: 210, y: 20}, {x: 210, y: 40}, {x: 210, y: 60}, {x: 210, y: 80}
         ];
@@ -110,9 +94,70 @@ const Preloader = () => {
         });
     }
 
-    createFormingDots();
+    function createFloatingDots() {
+        setTimeout(() => {
+            if (!container) return;
+            const dotCount = 30;
+            
+            for (let i = 0; i < dotCount; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'floating-dot';
+                
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                
+                dot.style.left = x + 'px';
+                dot.style.top = y + 'px';
+                dot.style.animationDelay = Math.random() * 4 + 's';
+                dot.style.animationDuration = (3 + Math.random() * 3) + 's';
+                
+                container.appendChild(dot);
+            }
+        }, 9000);
+    }
 
-    // No need to call other functions, they are CSS-based or not part of this component's logic
+    function createSparkles() {
+        if (!container) return;
+        const sparkleCount = 20;
+        
+        for (let i = 0; i < sparkleCount; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.animationDelay = Math.random() * 3 + 's';
+            
+            container.appendChild(sparkle);
+        }
+    }
+
+    function createMagicParticles() {
+        if (!container) return;
+        const particleCount = 15;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'magic-particle';
+            
+            const x = Math.random() * window.innerWidth;
+            const y = window.innerHeight - 50;
+            
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            
+            container.appendChild(particle);
+        }
+    }
+
+    createFormingDots();
+    createFloatingDots();
+    createSparkles();
+    createMagicParticles();
   }, []);
 
   return (

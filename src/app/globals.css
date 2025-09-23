@@ -219,7 +219,6 @@ body {
     align-items: center;
     overflow: hidden;
     position: relative;
-    animation: galaxyRotation 20s ease-in-out infinite;
 }
 
 #preloader-body::before {
@@ -270,7 +269,6 @@ body {
     transform: scale(0) rotate(180deg);
 }
 
-/* Initial letters B and M appear after dots form them */
 .letter.b {
     animation: initialAppear 1s ease-out 8.5s forwards,
                swingToPosition 1.5s ease-out 10s forwards;
@@ -283,7 +281,6 @@ body {
     z-index: 10;
 }
 
-/* Other letters appear with floating effect */
 .letter.a { animation: floatReveal 1.2s ease-out 11.5s forwards; }
 .letter.c { animation: floatReveal 1.2s ease-out 11.7s forwards; }
 .letter.k { animation: floatReveal 1.2s ease-out 11.9s forwards; }
