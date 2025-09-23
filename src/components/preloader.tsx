@@ -5,10 +5,15 @@ import { useEffect } from 'react';
 const Preloader = () => {
   useEffect(() => {
     // This is a client component, we can use useEffect
-    
+    const container = document.querySelector('.preloader-container');
+    if (!container) return;
+
+    // Clean up any previous dots to avoid duplicates on re-render in dev mode
+    const existingDots = container.querySelectorAll('.forming-dot');
+    existingDots.forEach(dot => dot.remove());
+
     // Create dots that form letters B and M
     function createFormingDots() {
-        const container = document.querySelector('.preloader-container');
         if (!container) return;
 
         // Define precise dot positions for letter B (left side of screen)
@@ -136,5 +141,3 @@ const Preloader = () => {
 };
 
 export default Preloader;
-
-    
