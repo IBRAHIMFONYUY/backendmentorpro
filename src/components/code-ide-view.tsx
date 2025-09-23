@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
-import type { Panel, PanelGroup } from "react-resizable-panels";
+import type { Panel } from "react-resizable-panels";
 import { NewProjectModal } from "./ide/new-project-modal";
 import { AiAssistantModal } from "./ai-assistant-modal";
 import { FileSystemNode, TestResult, initialFiles, initialTestResults } from "@/lib/ide-data";
@@ -34,7 +34,7 @@ const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | (
       
       // Ensure openFolders is always an array
       if (key === 'openFolders' && !Array.isArray(parsed)) {
-        return defaultValue;
+        return Array.isArray(defaultValue) ? defaultValue : [];
       }
 
       return parsed;
@@ -71,12 +71,12 @@ const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => 
     return null;
 }
 
-const addNode = (tree: FileSystemNode, path: string, type: 'file' | 'folder'): FileSystemNode => {
-    const parts = path.split('/').filter(p => p);
+const addNodeToTree = (tree: FileSystemNode, basePath: string, name: string, type: 'file' | 'folder'): FileSystemNode => {
+    const path = basePath === '/' ? `/${name}` : `${basePath}/${name}`;
+    const parts = basePath.split('/').filter(p => p);
     let currentNode = tree;
 
-    for (let i = 0; i < parts.length - 1; i++) {
-        const part = parts[i];
+    for (const part of parts) {
         let childNode = currentNode.children?.find(c => c.name === part);
         if (childNode && childNode.type === 'folder') {
             currentNode = childNode;
@@ -86,15 +86,14 @@ const addNode = (tree: FileSystemNode, path: string, type: 'file' | 'folder'): F
         }
     }
 
-    const newNodeName = parts[parts.length - 1];
-    if (currentNode.children?.some(c => c.name === newNodeName)) {
+    if (currentNode.children?.some(c => c.name === name)) {
         return tree; // Node already exists
     }
 
     const newNode: FileSystemNode = {
-        name: newNodeName,
+        name,
         type,
-        path: (currentNode.path === '/' ? '' : currentNode.path) + '/' + newNodeName,
+        path,
         children: type === 'folder' ? [] : undefined,
         content: type === 'file' ? '' : undefined,
     };
@@ -113,9 +112,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [openTabs, setOpenTabs] = usePersistentState<string[]>('openTabs', ['/server.js']);
   const [activeTab, setActiveTab] = usePersistentState<string>('activeTab', '/server.js');
   const [openFolders, setOpenFolders] = usePersistentState<string[]>('openFolders', ['/']);
+  const [currentWorkingDirectory, setCurrentWorkingDirectory] = usePersistentState<string>('cwd', '/');
 
   const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
-  const [selectedFolder, setSelectedFolder] = useState<string>('/');
   
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
@@ -149,19 +148,13 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const filePanelRef = useRef<Panel>(null);
   const rightPanelLastSize = useRef<number>(35);
 
-  const activeFileContent = findNode(activeTab, files)?.content ?? '';
-
-  const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void, setTerminalOutput: (updater: (prev: any[]) => any[]) => void) => {
+  const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void) => {
     setIsRunning(true);
     setActiveRightPanelTab("output");
-    setTerminalOutput(prev => [...prev, {type: 'command', content: `> node ${activeTab.substring(1)}`}]);
     toast({ title: "Running code..." });
 
     await new Promise(resolve => setTimeout(resolve, 500));
-    setTerminalOutput(prev => [...prev, {type: 'output', content: "Server running on port 3000"}]);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    setTerminalOutput(prev => [...prev, {type: 'success', content: 'Execution finished successfully.'}]);
-
+    
     setIsRunning(false);
     toast({ title: "Execution Finished", description: "Check the output panel." });
   };
@@ -214,7 +207,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       }
       setActiveTab(path);
     } else if (node.type === 'folder') {
-      setSelectedFolder(path);
       toggleFolder(path);
     }
   }
@@ -298,8 +290,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             }
             break;
           case 'enter':
-             e.preventDefault();
-             submitAction();
+             if (e.ctrlKey || e.metaKey) {
+                 e.preventDefault();
+                 submitAction();
+             }
              break;
         }
       } else if (e.key === 'F5') {
@@ -321,24 +315,26 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   };
   
   const handleCreateFile = (name: string) => {
-      if (!name || !name.includes('.')) {
-          toast({ variant: 'destructive', title: 'Invalid File Name', description: 'Please provide a valid file name with an extension.'});
+      const selectedFolder = findNode(currentWorkingDirectory, files);
+      if (!name || !name.includes('.') || !selectedFolder || selectedFolder.type !== 'folder') {
+          toast({ variant: 'destructive', title: 'Invalid Operation', description: 'Please provide a valid file name and ensure a folder is selected.'});
           return;
       }
-      const path = (selectedFolder === '/' ? '' : selectedFolder) + '/' + name;
-      setFiles(prev => addNode(prev, path, 'file'));
+      const path = (currentWorkingDirectory === '/' ? '' : currentWorkingDirectory) + '/' + name;
+      setFiles(prev => addNodeToTree(prev, currentWorkingDirectory, name, 'file'));
       handleFileSelect(path);
       toast({ title: "File created!", description: `File "${path}" was created successfully.` });
       setCreateFileModalOpen(false);
   }
 
   const handleCreateFolder = (name: string) => {
-       if (!name || name.includes('.')) {
-          toast({ variant: 'destructive', title: 'Invalid Folder Name', description: 'Please provide a valid folder name.'});
+       const selectedFolder = findNode(currentWorkingDirectory, files);
+       if (!name || name.includes('.') || !selectedFolder || selectedFolder.type !== 'folder') {
+          toast({ variant: 'destructive', title: 'Invalid Operation', description: 'Please provide a valid folder name and ensure a folder is selected.'});
           return;
       }
-      const path = (selectedFolder === '/' ? '' : selectedFolder) + '/' + name;
-      setFiles(prev => addNode(prev, path, 'folder'));
+      const path = (currentWorkingDirectory === '/' ? '' : currentWorkingDirectory) + '/' + name;
+      setFiles(prev => addNodeToTree(prev, currentWorkingDirectory, name, 'folder'));
       toast({ title: "Folder created!", description: `Folder "${path}" was created successfully.` });
       setCreateFolderModalOpen(false);
   }
@@ -386,10 +382,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     
     const node = findNode(path, files);
     if(node?.type === 'folder') {
-        setSelectedFolder(path);
+        setCurrentWorkingDirectory(path);
     } else if (node?.type === 'file') {
         const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-        setSelectedFolder(parentPath);
+        setCurrentWorkingDirectory(parentPath);
     }
   };
 
@@ -434,72 +430,51 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             return;
         }
 
-        let newPath = '';
+        const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/')) || '/';
+        const newPath = parentPath === '/' ? `/${newName}` : `${parentPath}/${newName}`;
+
+        // Check if a node with the new name already exists in the parent
+        const parentNode = findNode(parentPath, files);
+        if (parentNode?.children?.some(child => child.name === newName)) {
+            toast({ variant: 'destructive', title: "A file or folder with that name already exists." });
+            setRenameModal(null);
+            return;
+        }
+
         setFiles(prevFiles => {
-            const renameRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode => {
-                let currentPath = (node.path.substring(0, node.path.lastIndexOf('/')) || '') + '/' + node.name;
-                
-                if (node.path === targetPath) {
-                    newPath = targetPath.substring(0, targetPath.lastIndexOf('/') + 1) + newName;
-                    const finalNode = { ...node, name: newName, path: newPath };
-                    currentPath = newPath;
+            const updatePaths = (node: FileSystemNode, oldP: string, newP: string): FileSystemNode => {
+                const updatedPath = node.path.startsWith(oldP) ? node.path.replace(oldP, newP) : node.path;
+                return {
+                    ...node,
+                    path: updatedPath,
+                    children: node.children ? node.children.map(child => updatePaths(child, oldP, newP)) : undefined,
+                };
+            };
+
+            const renameRecursively = (node: FileSystemNode): FileSystemNode => {
+                if (node.path === oldPath) {
+                    const renamedNode = { ...node, name: newName };
+                    return updatePaths(renamedNode, oldPath, newPath);
                 }
 
                 if (node.children) {
-                    return { 
-                        ...node,
-                        name: node.path === targetPath ? newName : node.name,
-                        path: node.path === targetPath ? newPath : node.path,
-                        children: node.children.map(child => renameRecursively(child, targetPath))
-                    };
+                    return { ...node, children: node.children.map(renameRecursively) };
                 }
-                
-                return { 
-                    ...node,
-                    name: node.path === targetPath ? newName : node.name,
-                    path: node.path === targetPath ? newPath : node.path
-                };
+
+                return node;
             };
-            // This is complex. A better approach would be to rebuild paths from the top.
-            // For now, let's try a simpler recursive update for renaming.
-            const updatePathAndChildren = (node: FileSystemNode, parentPath: string): FileSystemNode => {
-              const newPath = `${parentPath}/${node.name}`.replace('//','/');
-              
-              if(node.children) {
-                return {
-                  ...node,
-                  path: newPath,
-                  children: node.children.map(child => updatePathAndChildren(child, newPath))
-                }
-              }
-              return { ...node, path: newPath };
-            }
 
-            const renameInTree = (node: FileSystemNode, targetPath: string, newName: string): FileSystemNode => {
-              if (node.path === targetPath) {
-                return { ...node, name: newName };
-              }
-              if (node.children) {
-                return { ...node, children: node.children.map(child => renameInTree(child, targetPath, newName)) };
-              }
-              return node;
-            }
-            
-            const namedChangedTree = renameInTree(prevFiles, oldPath, newName);
-            const finalTree = updatePathAndChildren(namedChangedTree.children![0], '');
-            const root = { ...namedChangedTree, children: [finalTree] };
-
-            // This is getting complicated. Let's find the node, rename it, and reconstruct.
-            // A mutable approach would be easier here, but state is immutable.
-             setOpenTabs(prev => prev.map(tab => tab.startsWith(oldPath) ? tab.replace(oldPath, newPath) : tab));
-             if (activeTab.startsWith(oldPath)) {
-                setActiveTab(prev => prev.replace(oldPath, newPath));
-             }
-            // The logic above for renaming is buggy. A simpler way:
-            toast({title: "Renaming is complex...", description: "This feature is being refined."});
-            return prevFiles;
+            return renameRecursively(prevFiles);
         });
 
+        setOpenTabs(prev => prev.map(tab => tab.startsWith(oldPath) ? tab.replace(oldPath, newPath) : tab));
+        if (activeTab.startsWith(oldPath)) {
+           setActiveTab(prev => prev.replace(oldPath, newPath));
+        }
+        if (openFolders.some(f => f.startsWith(oldPath))) {
+            setOpenFolders(prev => prev.map(f => f.startsWith(oldPath) ? f.replace(oldPath, newPath) : f));
+        }
+        toast({title: `Renamed to "${newName}"`});
         setRenameModal(null);
     };
     
@@ -517,31 +492,39 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         }
         
         const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-        const newPath = parentPath === '/' ? `/${newName}` : `${parentPath}/${newName}`;
 
-        const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
-            if (node.path === targetPath) {
-                 if (node.children?.some(c => c.name === newNode.name)) {
-                     toast({ variant: 'destructive', title: "A file/folder with that name already exists in this directory." });
-                     return node;
+        const addRecursively = (tree: FileSystemNode, destinationPath: string, nodeToAdd: FileSystemNode, newName: string): FileSystemNode => {
+            let pathExists = true;
+            let counter = 1;
+            let finalName = newName;
+            
+            while(pathExists) {
+                const parentNode = findNode(destinationPath, tree);
+                if (!parentNode?.children?.some(c => c.name === finalName)) {
+                    pathExists = false;
+                } else {
+                    const baseName = newName.includes('-copy') ? newName.substring(0, newName.lastIndexOf('-copy')) : newName;
+                    finalName = `${baseName}-copy-${counter++}`;
                 }
-                const newChildren = [...(node.children || []), newNode].sort((a,b) => {
-                    if (a.type === 'folder' && b.type !== 'folder') return -1;
-                    if (a.type !== 'folder' && b.type === 'folder') return 1;
-                    return a.name.localeCompare(b.name);
-                });
-                return { ...node, children: newChildren };
             }
-             if (node.children) {
-                return { ...node, children: node.children.map(child => addRecursively(child, targetPath, newNode)) };
+            
+            const newPath = destinationPath === '/' ? `/${finalName}` : `${destinationPath}/${finalName}`;
+
+            const updatePaths = (node: FileSystemNode, oldPath: string, newPath: string): FileSystemNode => {
+                 const updatedPath = node.path.replace(oldPath, newPath);
+                 return {
+                    ...node,
+                    path: updatedPath,
+                    children: node.children ? node.children.map(child => updatePaths(child, node.path, updatedPath)) : undefined,
+                 }
             }
-            return node;
+
+            const newNode = updatePaths(JSON.parse(JSON.stringify({ ...nodeToAdd, name: finalName })), nodeToAdd.path, newPath);
+
+            return addNodeToTree(tree, destinationPath, newNode.name, newNode.type);
         };
         
-        // Deep copy of node to duplicate
-        const newNode = JSON.parse(JSON.stringify({ ...nodeToCopy, name: newName, path: newPath }));
-        
-        setFiles(prev => addRecursively(prev, parentPath, newNode));
+        setFiles(prev => addRecursively(prev, parentPath, nodeToCopy, newName));
         toast({ title: `Duplicated to "${newName}"` });
     };
 
@@ -554,29 +537,15 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         const nodeToPaste = findNode(clipboard.path, files);
         if (!nodeToPaste) return;
 
-        const newName = nodeToPaste.name;
-        const newPath = `${destinationPath === '/' ? '' : destinationPath}/${newName}`;
-        
-        let fileTree = files;
+        const destNode = findNode(destinationPath, files);
+        if (!destNode || destNode.type !== 'folder') {
+            toast({ variant: 'destructive', title: "Invalid paste location" });
+            return;
+        }
 
-        const addRecursively = (node: FileSystemNode, targetPath: string, nodeToAdd: FileSystemNode): FileSystemNode => {
-            if (node.path === targetPath) {
-                if (node.children?.find(c => c.name === nodeToAdd.name)) {
-                     toast({ variant: 'destructive', title: "A file with that name already exists." });
-                     return node; // abort
-                }
-                const newChildren = [...(node.children || []), { ...nodeToAdd, path: newPath }].sort((a,b) => {
-                    if (a.type === 'folder' && b.type !== 'folder') return -1;
-                    if (a.type !== 'folder' && b.type === 'folder') return 1;
-                    return a.name.localeCompare(b.name);
-                });
-                return { ...node, children: newChildren };
-            }
-             if (node.children) {
-                return { ...node, children: node.children.map(child => addRecursively(child, targetPath, nodeToAdd)) };
-            }
-            return node;
-        };
+        const newName = nodeToPaste.name;
+        
+        let fileTree = { ...files };
 
         if (clipboard.operation === 'cut') {
             const deleteRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode | null => {
@@ -592,8 +561,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             fileTree = deleteRecursively(fileTree, clipboard.path)!;
         }
         
-        fileTree = addRecursively(fileTree, destinationPath, nodeToPaste);
-        setFiles(fileTree);
+        setFiles(addNodeToTree(fileTree, destinationPath, newName, nodeToPaste.type));
         toast({ title: `Pasted "${newName}"` });
         setClipboard(null);
     };
@@ -612,7 +580,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             { label: "Copy", icon: <Copy className="h-4 w-4" />, action: () => setClipboard({ path: fileContextMenu.path, operation: 'copy' }) },
             { label: "Paste", icon: <ClipboardPaste className="h-4 w-4" />, action: () => handlePaste(isFolder ? fileContextMenu.path : (fileContextMenu.path.substring(0, fileContextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard, separator: true },
             { label: "Duplicate", icon: <CopyPlus className="h-4 w-4" />, action: () => duplicateNode(fileContextMenu.path) },
-            { label: "Rename", icon: <Edit className="h-4 w-4" />, action: () => toast({title: "Rename coming soon!"}), disabled: true, separator: true },
+            { label: "Rename", icon: <Edit className="h-4 w-4" />, action: () => setRenameModal({path: node.path, name: node.name, type: node.type}), separator: true },
             { label: "Delete", icon: <Trash2 className="h-4 w-4" />, action: () => deleteNode(fileContextMenu.path), isDestructive: true },
         ];
     };
@@ -630,7 +598,14 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             { label: "Block", icon: <Ban className="h-4 w-4"/>, action: () => toast({title: "Coming Soon!", description: "This feature is under development."}), disabled: true, separator: true },
             { label: "Cut", icon: <Scissors className="h-4 w-4" />, action: () => document.execCommand('cut') },
             { label: "Copy", icon: <Copy className="h-4 w-4" />, action: () => document.execCommand('copy') },
-            { label: "Paste", icon: <ClipboardPaste className="h-4 w-4" />, action: () => navigator.clipboard.readText().then(text => editorInstanceRef.current?.trigger('paste', 'paste', { text }))},
+            { label: "Paste", icon: <ClipboardPaste className="h-4 w-4" />, action: async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    editorInstanceRef.current?.trigger('paste', 'paste', { text });
+                } catch(e) {
+                    console.error("Failed to paste from clipboard", e);
+                }
+            }},
         ];
     };
 
@@ -646,8 +621,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         initialSettings={settings}
       />
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
-      <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} basePath={selectedFolder} />
-      <CreateFolderModal isOpen={createFolderModalOpen} onClose={() => setCreateFolderModalOpen(false)} onCreate={handleCreateFolder} basePath={selectedFolder} />
+      <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} basePath={currentWorkingDirectory} />
+      <CreateFolderModal isOpen={createFolderModalOpen} onClose={() => setCreateFolderModalOpen(false)} onCreate={handleCreateFolder} basePath={currentWorkingDirectory} />
        {renameModal && (
         <RenameNodeModal
           isOpen={!!renameModal}
@@ -688,7 +663,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       onExpandAll={handleExpandAll}
                       openFolders={openFolders}
                       toggleFolder={toggleFolder}
-                      selectedFolder={selectedFolder}
+                      selectedFolder={currentWorkingDirectory}
                       onContextMenu={onFileContextMenu}
                   />
               </ResizablePanel>
@@ -719,6 +694,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       handleSubmit={handleSubmit}
                       addNode={handleCreateFile}
                       deleteNode={deleteNode}
+                      currentWorkingDirectory={currentWorkingDirectory}
+                      setCurrentWorkingDirectory={setCurrentWorkingDirectory}
+                      onOpenFile={handleFileSelect}
                   />
                 </ResizablePanel>
               </ResizablePanelGroup>
@@ -730,8 +708,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
-
-    
-
-    

@@ -9,23 +9,21 @@ import { ScrollArea } from '../ui/scroll-area';
 interface RightPanelProps {
     testResults: TestResult[];
     files: FileSystemNode;
-    handleRunCode: (setActiveRightPanelTab: (tab: string) => void, setTerminalOutput: (updater: (prev: any[]) => any[]) => void) => void;
+    handleRunCode: (setActiveRightPanelTab: (tab: string) => void) => void;
     handleSubmit: (setActiveRightPanelTab: (tab: string) => void) => void;
-    addNode: (path: string, type: 'file' | 'folder') => void;
+    addNode: (name: string, type: 'file' | 'folder') => void;
     deleteNode: (path: string) => void;
+    currentWorkingDirectory: string;
+    setCurrentWorkingDirectory: (path: string) => void;
+    onOpenFile: (path: string) => void;
 }
 
 export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
-    const { testResults, files, handleRunCode, handleSubmit, addNode, deleteNode } = props;
+    const { testResults, files, handleRunCode, handleSubmit, addNode, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile } = props;
     const [activeTab, setActiveTab] = useState('output');
-    const [terminalOutput, setTerminalOutput] = useState([
-        { type: 'output', content: 'Welcome to Backend Mentor Terminal' },
-        { type: 'output', content: "Type 'help' for available commands" },
-        { type: 'ai', content: '[AI] Rahim is ready to assist you!' },
-    ]);
 
     useImperativeHandle(ref, () => ({
-        runCode: () => handleRunCode(setActiveTab, setTerminalOutput),
+        runCode: () => handleRunCode(setActiveTab),
         submit: () => handleSubmit(setActiveTab),
     }));
 
@@ -60,6 +58,9 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
                             onRunTests={() => handleSubmit(setActiveTab)}
                             addNode={addNode}
                             deleteNode={deleteNode}
+                            currentWorkingDirectory={currentWorkingDirectory}
+                            setCurrentWorkingDirectory={setCurrentWorkingDirectory}
+                            onOpenFile={onOpenFile}
                         />
                   )}
                   {activeTab === 'api' && (
