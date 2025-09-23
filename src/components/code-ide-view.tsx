@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Bot, CheckCircle, Loader2, XCircle, File, Folder, RefreshCw, ChevronsRight, ChevronsLeft, Play, Paperclip,
-  Plus, FolderPlus, Terminal, FlaskConical, TestTube, Share2, Cog, LayoutGrid, Eye, Search, GitBranch, Wifi, Minus, X, Columns, Expand, ArrowLeft, ChevronRight, FileJson, FileText, Check
+  Plus, FolderPlus, Terminal, FlaskConical, TestTube, Share2, Cog, LayoutGrid, Eye, Search, GitBranch, Wifi, Minus, X, Columns, Expand, ArrowLeft, ChevronRight, FileJson, FileText, Check, Send
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ApiPlaygroundView } from "./api-playground-view";
