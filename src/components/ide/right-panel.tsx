@@ -1,5 +1,5 @@
 
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { ApiPlaygroundView } from '../api-playground-view';
 import { CheckCircle, FlaskConical, Loader2, Terminal as TerminalIcon, TestTube, XCircle } from 'lucide-react';
 import { TerminalView } from './terminal-view';
@@ -19,6 +19,11 @@ interface RightPanelProps {
     onOpenFile: (path: string) => void;
 }
 
+type TerminalHandle = {
+    executeCommand: (command: string) => void;
+};
+
+
 export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
     const { 
         testResults, 
@@ -33,10 +38,15 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
         onOpenFile 
     } = props;
     const [activeTab, setActiveTab] = useState('output');
+    const terminalRef = useRef<TerminalHandle>(null);
 
     useImperativeHandle(ref, () => ({
         runCode: () => handleRunCode(setActiveTab),
         submit: () => handleSubmit(setActiveTab),
+        executeCommandInTerminal: (command: string) => {
+            setActiveTab('output');
+            terminalRef.current?.executeCommand(command);
+        }
     }));
 
     return (
@@ -65,7 +75,8 @@ export const RightPanel = forwardRef((props: RightPanelProps, ref) => {
                     </ScrollArea>
                   )}
                    {activeTab === 'output' && (
-                        <TerminalView 
+                        <TerminalView
+                            ref={terminalRef}
                             files={files}
                             onRunTests={() => handleSubmit(setActiveTab)}
                             addFile={addFile}

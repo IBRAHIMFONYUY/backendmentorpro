@@ -159,10 +159,24 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const rightPanelLastSize = useRef<number>(35);
 
   const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void) => {
+    if (!activeTab) {
+      toast({ variant: 'destructive', title: 'No file selected', description: 'Please select a file to run.' });
+      return;
+    }
+    
     setIsRunning(true);
     setActiveRightPanelTab("output");
-    toast({ title: "Running code..." });
+    toast({ title: `Running ${activeTab}...` });
 
+    const fileToRun = findNode(activeTab, files);
+    
+    if (rightPanelRef.current) {
+      // The actual execution logic is now in the terminal view itself.
+      // We just need to trigger it.
+      (rightPanelRef.current as any).executeCommandInTerminal(`node ${fileToRun?.name}`);
+    }
+
+    // Simulate a delay for running
     await new Promise(resolve => setTimeout(resolve, 500));
     
     setIsRunning(false);
@@ -253,11 +267,15 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
   
   const runCodeAction = () => {
-    rightPanelRef.current?.runCode();
+    if (rightPanelRef.current) {
+        (rightPanelRef.current as any).runCode();
+    }
   };
 
   const submitAction = () => {
-    rightPanelRef.current?.submit();
+    if (rightPanelRef.current) {
+        (rightPanelRef.current as any).submit();
+    }
   };
 
   useEffect(() => {
@@ -407,6 +425,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
 
     const deleteNode = (path: string): boolean => {
+        if (path === '/') {
+            toast({ variant: 'destructive', title: "Cannot delete root directory." });
+            return false;
+        }
         if (!findNode(path, files)) return false;
 
         setFiles(prevFiles => {
@@ -574,7 +596,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         }
 
         const addRecursively = (node: FileSystemNode, basePath: string): FileSystemNode => {
-            const newNode = { ...node, path: basePath === '/' ? `/${node.name}` : `${basePath}/${node.name}` };
+            const newPath = basePath === '/' ? `/${node.name}` : `${basePath}/${node.name}`;
+            const newNode = { ...node, path: newPath };
             if (newNode.children) {
                 newNode.children = newNode.children.map(child => addRecursively(child, newNode.path));
             }
@@ -585,6 +608,12 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         if(finalDest && finalDest.children) {
             const nodeToAdd = JSON.parse(JSON.stringify(nodeToMove));
             finalDest.children.push(addRecursively(nodeToAdd, destinationPath));
+            // Sort children after adding
+            finalDest.children.sort((a, b) => {
+              if (a.type === 'folder' && b.type === 'file') return -1;
+              if (a.type === 'file' && b.type === 'folder') return 1;
+              return a.name.localeCompare(b.name);
+            });
         }
 
         setFiles(newFiles);
@@ -643,8 +672,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       <SettingsModal 
         isOpen={settingsModalOpen} 
         onClose={() => setSettingsModalOpen(false)}
-        onSettingsChange={onSettingsChange}
         initialSettings={settings}
+        onSettingsChange={onSettingsChange}
       />
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
       <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={(name) => handleCreateFile(name, currentWorkingDirectory)} basePath={currentWorkingDirectory} />
@@ -718,8 +747,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       files={files}
                       handleRunCode={handleRunCode}
                       handleSubmit={handleSubmit}
-                      addFile={(name, path) => handleCreateFile(name, path)}
-                      addFolder={(name, path) => handleCreateFolder(name, path)}
+                      addFile={handleCreateFile}
+                      addFolder={handleCreateFolder}
                       deleteNode={deleteNode}
                       currentWorkingDirectory={currentWorkingDirectory}
                       setCurrentWorkingDirectory={setCurrentWorkingDirectory}

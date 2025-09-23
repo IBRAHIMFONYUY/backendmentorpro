@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import type { FileSystemNode } from '@/lib/ide-data';
 import { mentorChat } from '@/ai/flows/mentor-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -24,23 +24,19 @@ type TerminalLine = {
 
 const findNode = (path: string, root: FileSystemNode): FileSystemNode | null => {
     if (root.path === path) return root;
+    // Handle root path check for children
     if (path === '/') return root;
-    if (!root.children) return null;
+
     const parts = path.split('/').filter(p => p);
-    let currentNode: FileSystemNode = root;
+    let currentNode: FileSystemNode | undefined = root;
     for (const part of parts) {
-        const found = currentNode.children?.find(c => c.name === part);
-        if (found) {
-            currentNode = found;
-        } else {
-            return null;
-        }
+        currentNode = currentNode?.children?.find(c => c.name === part);
+        if (!currentNode) return null;
     }
     return currentNode;
 };
 
-
-export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile }: TerminalViewProps) {
+export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile }: TerminalViewProps, ref) => {
     const [terminalInput, setTerminalInput] = useState('');
     const [terminalOutput, setTerminalOutput] = useState<TerminalLine[]>([
         { type: 'output', content: 'Welcome to Backend Mentor Terminal' },
@@ -54,6 +50,12 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
     const inputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
+    useImperativeHandle(ref, () => ({
+      executeCommand(command: string) {
+        handleTerminalCommand(command, true);
+      }
+    }));
+
     useEffect(() => {
         if (terminalRef.current) {
             terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
@@ -62,7 +64,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
     
     useEffect(() => {
         const handleCtrlC = (e: KeyboardEvent) => {
-            if (chatMode && e.ctrlKey && e.key === 'c') {
+            if (chatMode && (e.ctrlKey || e.metaKey) && e.key === 'c') {
                 e.preventDefault();
                 setChatMode(false);
                 setTerminalOutput(prev => [...prev, {type: 'ai', content: '[Rahim] Chat session ended. Returning to terminal.'}]);
@@ -92,16 +94,16 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
     const getPrompt = () => {
         if (chatMode) return `<span>&gt;&nbsp;</span>`;
 
-        const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory;
+        const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory.split('/').pop();
         return `backendmentor@penguin:<span class="text-blue-400">${path}</span>$&nbsp;`;
     }
     
     const getCommandPrompt = (command: string) => {
-         const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory;
-        return `backendmentor@penguin:${path}$ ${command}`;
+        const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory.split('/').pop();
+        return `backendmentor@penguin:<span class="text-blue-400">${path}</span>$&nbsp;${command}`;
     }
 
-    const handleTerminalCommand = async (command: string) => {
+    const handleTerminalCommand = async (command: string, fromCodeRunner = false) => {
         if (chatMode) {
             setTerminalOutput(prev => [...prev, {type: 'command', content: `> ${command}`}]);
             setTerminalInput('');
@@ -115,14 +117,16 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
             return;
         }
 
-        setTerminalOutput(prev => [...prev, {type: 'command', content: getCommandPrompt(command)}]);
-        if (command) {
-            setHistory(prev => [command, ...prev]);
+        if (!fromCodeRunner) {
+            setTerminalOutput(prev => [...prev, {type: 'command', content: getCommandPrompt(command)}]);
+        }
+        if (command && command.trim()) {
+            setHistory(prev => [command, ...prev].filter((v, i, a) => a.indexOf(v) === i).slice(0, 50));
         }
         setHistoryIndex(-1);
 
         const args = command.split(' ').filter(Boolean);
-        const cmd = args[0].toLowerCase();
+        const cmd = args[0]?.toLowerCase();
         
         let output: TerminalLine[] = [];
         
@@ -174,7 +178,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                     if (fileToCat && fileToCat.type === 'file') {
                         output.push({type: 'output', content: fileToCat.content?.replace(/\n/g, '<br/>') || ''});
                     } else {
-                        output.push({type: 'error', content: `cat: ${args[1]}: No such file`});
+                        output.push({type: 'error', content: `cat: ${args[1]}: No such file. Usage: cat <filename>`});
                     }
                 } else {
                     output.push({type: 'error', content: 'cat: missing file operand. Usage: cat <filename>'});
@@ -185,13 +189,14 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                     const path_to_run = resolvePath(currentWorkingDirectory, args[1]);
                     const fileToRun = getNode(path_to_run);
                     if (fileToRun?.content) {
-                       output.push({type: 'output', content: `Executing ${args[1]}...`});
+                       if (!fromCodeRunner) output.push({type: 'output', content: `Executing ${args[1]}...`});
                        const logOutput: string[] = [];
                        const originalConsoleLog = console.log;
                        console.log = (...args: any[]) => {
-                           logOutput.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' '));
+                           logOutput.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '));
                        };
                        try {
+                          // eslint-disable-next-line no-new-func
                           new Function(fileToRun.content)();
                        } catch(e: any) {
                           logOutput.push(`Error: ${e.message}`);
@@ -200,14 +205,14 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
 
                        if (logOutput.length > 0) {
                            output.push({type: 'output', content: logOutput.join('<br/>')});
-                       } else {
+                       } else if (!fromCodeRunner) {
                            output.push({type: 'output', content: 'Execution finished with no output.'});
                        }
                    } else {
                        output.push({type: 'error', content: `File not found: ${args[1]}`});
                    }
                 } else {
-                    output.push({type: 'error', content: 'node: missing file operand. Usage: node <filename>'});
+                    output.push({type: 'error', content: 'node: missing file operand. Usage: node <filename.js>'});
                 }
                 break;
             case 'whoami':
@@ -336,6 +341,8 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
             case 'env':
                 output.push({type: 'output', content: `PWD=${currentWorkingDirectory}<br/>USER=developer<br/>SHELL=/bin/bash`});
                 break;
+            case '': // Empty command
+                break;
             default:
                output.push({type: 'error', content: `Command not found: ${command}. Type 'help'.`});
         }
@@ -365,6 +372,9 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                 setHistoryIndex(-1);
                 setTerminalInput("");
             }
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+            e.preventDefault();
+            setTerminalOutput([]);
         }
     }
 
@@ -378,7 +388,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
               </div>
             </div>
-            <div ref={terminalRef} className="flex-1 terminal p-2 font-mono text-xs overflow-y-auto">
+            <div ref={terminalRef} className="flex-1 terminal p-2 font-mono text-xs">
               {terminalOutput.map((line, index) => (
                 <div key={index} className={line.type === 'command' ? 'text-gray-400' : line.type === 'error' ? 'text-red-400' : line.type === 'ai' ? 'text-purple-400' : 'text-green-400'}>
                    <span dangerouslySetInnerHTML={{ __html: line.content.replace(/ /g, '&nbsp;') }} />
@@ -400,4 +410,6 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
             </div>
          </div>
     );
-}
+});
+
+TerminalView.displayName = 'TerminalView';
