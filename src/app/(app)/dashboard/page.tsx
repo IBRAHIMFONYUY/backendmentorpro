@@ -24,17 +24,12 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem("hasSeenWelcomeAssistant");
-    if (!hasSeenWelcome) {
+    // We want to show this only on the first visit.
+    if (!localStorage.getItem("hasSeenWelcomeAssistant")) {
       setShowWelcome(true);
       localStorage.setItem("hasSeenWelcomeAssistant", "true");
     }
-    
-    toast({
-        title: "Dashboard loaded!",
-        description: "Welcome back, ready to level up your skills?",
-    })
-  }, [toast]);
+  }, []);
 
   const handleContinueChallenge = () => {
     toast({

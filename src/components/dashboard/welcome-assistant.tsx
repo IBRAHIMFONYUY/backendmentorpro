@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { placeholderImages } from "@/lib/placeholder-images";
 
 interface WelcomeAssistantProps {
   isOpen: boolean;
@@ -18,23 +17,20 @@ interface WelcomeAssistantProps {
 }
 
 export function WelcomeAssistant({ isOpen, onClose }: WelcomeAssistantProps) {
-  const assistantImage = placeholderImages.find(p => p.id === 'assistant-avatar');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md glass-effect">
         <DialogHeader>
           <div className="flex justify-center">
-            {assistantImage && (
-                 <Image
-                    src={assistantImage.imageUrl}
-                    alt={assistantImage.description}
-                    width={150}
-                    height={150}
-                    className="rounded-full border-4 border-primary/30"
-                    data-ai-hint={assistantImage.imageHint}
-                />
-            )}
+            <Image
+                src="https://picsum.photos/seed/assistant/150/150"
+                alt="AI Assistant"
+                width={150}
+                height={150}
+                className="rounded-full border-4 border-primary/30"
+                data-ai-hint="robot assistant"
+            />
           </div>
           <DialogTitle className="text-center text-2xl pt-4">Welcome to BackendMentorAI!</DialogTitle>
           <DialogDescription className="text-center text-base text-muted-foreground">
