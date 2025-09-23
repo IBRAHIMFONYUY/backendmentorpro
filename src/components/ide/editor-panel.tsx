@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react";
 import type { FileSystemNode } from "@/lib/ide-data";
 import { X } from "lucide-react";
 import type { editor } from "monaco-editor";
-import { IdeSettings } from "./settings-modal";
+import { type IdeSettings } from "./settings-modal";
 import { getFileIcon } from "@/lib/ide-utils";
 
 interface EditorPanelProps {
@@ -54,37 +54,93 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
     const activeFileContent = activeFile?.content ?? '';
 
     useEffect(() => {
-        if (monacoRef.current) return;
-        
-        if ((window as any).monaco) {
-            monacoRef.current = (window as any).monaco;
-            initializeEditor();
+      const initMonaco = () => {
+        if (editorContainerRef.current && !editorRef.current) {
+          const editorInstance = monacoRef.current.editor.create(editorContainerRef.current, {
+            value: activeFileContent,
+            language: 'javascript',
+            theme: 'vs-dark',
+            fontSize: 14,
+            fontFamily: "JetBrains Mono",
+            minimap: { enabled: true },
+            scrollBeyondLastLine: true,
+            automaticLayout: true,
+            suggestOnTriggerCharacters: true,
+            quickSuggestions: true,
+            wordWrap: "on",
+            lineNumbers: "on",
+            renderWhitespace: "selection",
+            bracketPairColorization: { enabled: true },
+            autoClosingBrackets: "always",
+            autoClosingQuotes: "always",
+            autoIndent: "full",
+            tabSize: 4,
+            insertSpaces: true,
+            detectIndentation: true,
+            formatOnType: true,
+            formatOnPaste: true,
+            suggestSelection: "first",
+            cursorStyle: "line",
+            cursorBlinking: "smooth",
+            renderLineHighlight: "all",
+            roundedSelection: false,
+            smoothScrolling: true,
+          });
+
+          editorInstance.onDidChangeModelContent(() => {
+              const value = editorInstance.getValue();
+              if (value !== activeFileContent) {
+                  onCodeChange(value || '');
+              }
+          });
+
+          editorRef.current = editorInstance;
+          onEditorReady(editorInstance);
         }
+      };
 
-        return () => {
-            editorRef.current?.dispose();
-        };
+      if ((window as any).monaco) {
+        monacoRef.current = (window as any).monaco;
+        initMonaco();
+      } else {
+        const script = document.querySelector('script[src*="monaco-editor"]');
+        script?.addEventListener('load', () => {
+          (window as any).require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
+          (window as any).require(['vs/editor/editor.main'], () => {
+            monacoRef.current = (window as any).monaco;
+            initMonaco();
+          });
+        });
+      }
 
-    }, []);
+      return () => {
+          editorRef.current?.dispose();
+          editorRef.current = null;
+      };
+    }, [onCodeChange, onEditorReady]);
 
     useEffect(() => {
         if (editorRef.current) {
             const model = editorRef.current.getModel();
             if (model && model.getValue() !== activeFileContent) {
-                model.setValue(activeFileContent);
+                editorRef.current.executeEdits(null, [{
+                    range: model.getFullModelRange(),
+                    text: activeFileContent,
+                }]);
             }
             
             const fileExtension = activeTab.split('.').pop() || '';
             const language = languageMap[fileExtension] || 'plaintext';
 
-            if (model) {
+            if (model && monacoRef.current) {
                 monacoRef.current.editor.setModelLanguage(model, language);
             }
         }
-    }, [activeTab, activeFileContent]);
+    }, [activeTab, activeFileContent, files]);
+
 
     useEffect(() => {
-        if (editorRef.current && editorSettings) {
+        if (editorRef.current && editorSettings && monacoRef.current) {
             editorRef.current.updateOptions({
                 fontSize: editorSettings.fontSize,
                 tabSize: editorSettings.tabSize,
@@ -95,43 +151,24 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
         }
     }, [editorSettings]);
 
-
-    const initializeEditor = () => {
-        if (editorContainerRef.current) {
-            editorRef.current = monacoRef.current.editor.create(editorContainerRef.current, {
-                value: activeFileContent,
-                language: 'javascript',
-                theme: 'vs-dark',
-                automaticLayout: true,
-            });
-
-            if (editorRef.current) {
-              onEditorReady(editorRef.current);
-            }
-
-            editorRef.current.onDidChangeModelContent(() => {
-                const value = editorRef.current?.getValue();
-                if (value !== activeFileContent) {
-                    onCodeChange(value || '');
-                }
-            });
-        }
-    };
-
     return (
         <>
             <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center overflow-x-auto">
-                {openTabs.map(path => (
-                    <div 
-                        key={path} 
-                        onClick={() => setActiveTab(path)} 
-                        className={`px-4 py-2 text-sm flex items-center gap-2 border-r border-gray-700 cursor-pointer shrink-0 ${activeTab === path ? 'tab-active text-white' : 'text-gray-400'}`}
-                    >
-                        {getFileIcon(path.split('/').pop() || '')}
-                        <span>{path.split('/').pop()}</span>
-                        <X className="h-4 w-4 hover:text-white" onClick={(e) => onCloseTab(path, e)}/>
-                    </div>
-                ))}
+                {openTabs.map(path => {
+                    const node = findNode(path, files);
+                    if (!node) return null;
+                    return (
+                        <div 
+                            key={path} 
+                            onClick={() => setActiveTab(path)} 
+                            className={`px-4 py-2 text-sm flex items-center gap-2 border-r border-gray-700 cursor-pointer shrink-0 ${activeTab === path ? 'tab-active text-white' : 'text-gray-400'}`}
+                        >
+                            {getFileIcon(node.name)}
+                            <span>{node.name}</span>
+                            <X className="h-4 w-4 hover:text-white" onClick={(e) => onCloseTab(path, e)}/>
+                        </div>
+                    )
+                })}
             </div>
             <div 
                 className="flex-1 relative bg-[#1e1e1e]" 
@@ -147,3 +184,5 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
         </>
     );
 }
+
+    

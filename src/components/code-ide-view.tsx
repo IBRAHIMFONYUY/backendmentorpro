@@ -20,9 +20,31 @@ import { CreateFileModal } from "./ide/create-file-modal";
 import { CreateFolderModal } from "./ide/create-folder-modal";
 import { ContextMenu } from "./ide/context-menu";
 import { RenameNodeModal } from "./ide/rename-node-modal";
-import { ClipboardPaste, Copy, CopyPlus, Edit, FilePlus2, Folder, Scissors, Trash2, Search, FileCog, Play, Ban } from "lucide-react";
+import { Ban, ClipboardPaste, Copy, CopyPlus, Edit, FileCog, FilePlus2, Folder, Play, Scissors, Search, Trash2 } from "lucide-react";
 import type { editor } from "monaco-editor";
 
+const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T) => void] => {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+      return storedValue ? JSON.parse(storedValue) : defaultValue;
+    } catch (error) {
+      return defaultValue;
+    }
+  });
+
+  const setValue = (value: T) => {
+    try {
+      const valueToStore = value instanceof Function ? value(state) : value;
+      setState(valueToStore);
+      localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(`Error saving state for key "${key}":`, error);
+    }
+  };
+
+  return [state, setValue];
+};
 
 const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
     if (!node) return null;
@@ -74,11 +96,12 @@ const addNode = (tree: FileSystemNode, path: string, type: 'file' | 'folder'): F
 
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
-  const [files, setFiles] = useState<FileSystemNode>(initialFiles);
-  const [openTabs, setOpenTabs] = useState<string[]>(['/server.js']);
-  const [activeTab, setActiveTab] = useState('/server.js');
+  const [files, setFiles] = usePersistentState<FileSystemNode>('fileSystem', initialFiles);
+  const [openTabs, setOpenTabs] = usePersistentState<string[]>('openTabs', ['/server.js']);
+  const [activeTab, setActiveTab] = usePersistentState<string>('activeTab', '/server.js');
+  const [openFolders, setOpenFolders] = usePersistentState<Set<string>>('openFolders', new Set(['/']));
+
   const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
-  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set(['/']));
   const [selectedFolder, setSelectedFolder] = useState<string>('/');
   
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -90,7 +113,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [settings, setSettings] = useState<IdeSettings | null>(null);
+  
+  const [settings, setSettings] = usePersistentState<IdeSettings | null>('ideSettings', null);
   const editorInstanceRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   
   // Context Menu State
@@ -161,7 +185,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
     if (node.type === 'file') {
       if (!openTabs.includes(path)) {
-        setOpenTabs(prev => [...prev, path]);
+        setOpenTabs([...openTabs, path]);
       }
       setActiveTab(path);
     } else if (node.type === 'folder') {
@@ -227,7 +251,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const onSettingsChange = (newSettings: IdeSettings) => {
     setSettings(newSettings);
     // Settings are applied via useEffect in EditorPanel
-    toast({ title: "Settings Updated", description: "Your changes have been applied." });
   };
   
   const handleCreateFile = (name: string) => {
@@ -236,7 +259,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           return;
       }
       const path = (selectedFolder === '/' ? '' : selectedFolder) + '/' + name;
-      setFiles(prevFiles => addNode(prevFiles, path, 'file'));
+      setFiles(addNode(files, path, 'file'));
       handleFileSelect(path);
       toast({ title: "File created!", description: `File "${path}" was created successfully.` });
       setCreateFileModalOpen(false);
@@ -248,7 +271,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           return;
       }
       const path = (selectedFolder === '/' ? '' : selectedFolder) + '/' + name;
-      setFiles(prevFiles => addNode(prevFiles, path, 'folder'));
+      setFiles(addNode(files, path, 'folder'));
       toast({ title: "Folder created!", description: `Folder "${path}" was created successfully.` });
       setCreateFolderModalOpen(false);
   }
@@ -326,10 +349,14 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             }
             return node;
         };
-        setFiles(prevFiles => deleteRecursively(prevFiles, path)!);
-        setOpenTabs(prev => prev.filter(t => !t.startsWith(path)));
+        const newFiles = deleteRecursively(files, path)!;
+        setFiles(newFiles);
+
+        const newTabs = openTabs.filter(t => !t.startsWith(path));
+        setOpenTabs(newTabs);
+
         if (activeTab.startsWith(path)) {
-            setActiveTab(openTabs[0] || '');
+            setActiveTab(newTabs.length > 0 ? newTabs[0] : '');
         }
         toast({ title: `Deleted "${path}"` });
     };
@@ -340,11 +367,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             return;
         }
 
+        let newPath = '';
         const renameRecursively = (node: FileSystemNode, targetPath: string, newName: string): FileSystemNode => {
             if (!node) return node;
             if (node.path === targetPath) {
-                const newPath = targetPath.substring(0, targetPath.lastIndexOf('/') + 1) + newName;
-                // A more robust solution would update paths of all children recursively
+                newPath = targetPath.substring(0, targetPath.lastIndexOf('/') + 1) + newName;
                 return { ...node, name: newName, path: newPath }; 
             }
             if (node.children) {
@@ -353,8 +380,17 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             return node;
         };
 
-        setFiles(prevFiles => renameRecursively(prevFiles, oldPath, newName));
+        const newFiles = renameRecursively(files, oldPath, newName);
+        setFiles(newFiles);
         setRenameModal(null);
+        
+        // Update tabs if a renamed file was open
+        const newTabs = openTabs.map(tab => tab === oldPath ? newPath : tab);
+        setOpenTabs(newTabs);
+        if (activeTab === oldPath) {
+            setActiveTab(newPath);
+        }
+
         toast({ title: `Renamed to "${newName}"` });
     };
     
@@ -390,7 +426,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         };
         
         const newNode = { ...nodeToCopy, name: newName, path: newPath };
-        setFiles(prevFiles => addRecursively(prevFiles, parentPath, newNode));
+        setFiles(addRecursively(files, parentPath, newNode));
         toast({ title: `Duplicated to "${newName}"` });
     };
 
@@ -408,7 +444,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         
         let fileTree = files;
 
-        // Simplified paste: just copy
         const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
             if (!node) return node;
             if (node.path === targetPath) {
@@ -416,16 +451,13 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                      toast({ variant: 'destructive', title: "A file with that name already exists." });
                      return node; // abort
                 }
-                return { ...node, children: [...(node.children || []), newNode] };
+                return { ...node, children: [...(node.children || []), { ...newNode, path: newPath }] };
             }
              if (node.children) {
                 return { ...node, children: node.children.map(child => addRecursively(child, targetPath, newNode)) };
             }
             return node;
         };
-
-        const newNode = { ...nodeToPaste, path: newPath };
-        fileTree = addRecursively(fileTree, destinationPath, newNode);
 
         if (clipboard.operation === 'cut') {
             const deleteRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode | null => {
@@ -442,6 +474,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             fileTree = deleteRecursively(fileTree, clipboard.path)!;
         }
         
+        fileTree = addRecursively(fileTree, destinationPath, nodeToPaste);
         setFiles(fileTree);
         toast({ title: `Pasted "${newName}"` });
         setClipboard(null);
@@ -467,7 +500,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     };
 
     const handleFind = () => editorInstanceRef.current?.trigger('find', 'actions.find', null);
-    const handleFormat = () => editorInstanceRef.current?.trigger('format', 'editor.action.formatDocument', null);
+    const handleFormat = () => editorInstanceRef.current?.getAction('editor.action.formatDocument')?.run();
     const handleRun = () => {
         const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
         if (rightPanel) rightPanel.runCode();
@@ -496,6 +529,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         isOpen={settingsModalOpen} 
         onClose={() => setSettingsModalOpen(false)}
         onSettingsChange={onSettingsChange}
+        initialSettings={settings}
       />
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
       <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} basePath={selectedFolder} />
@@ -520,8 +554,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           onAiClick={() => setAiModalOpen(true)}
           onSettingsClick={() => setSettingsModalOpen(true)}
           onRunCode={() => {
-            // This is a temporary way to access the panel's functions.
-            // A more robust solution would use a ref passed to the component.
             const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
             if (rightPanel) rightPanel.runCode();
           }}
@@ -582,8 +614,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
-        <IdeStatusBar />
+        <IdeStatusBar editor={editorInstanceRef.current}/>
       </div>
     </>
   );
 }
+
+    

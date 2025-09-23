@@ -11,7 +11,7 @@ import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
 import { useToast } from "@/hooks/use-toast";
 
-interface Settings {
+export interface IdeSettings {
   geminiApiKey: string;
   theme: string;
   fontSize: number;
@@ -24,11 +24,12 @@ interface Settings {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSettingsChange: (settings: Settings) => void;
+  onSettingsChange: (settings: IdeSettings) => void;
+  initialSettings: IdeSettings | null;
 }
 
-const initialSettings: Settings = {
-    geminiApiKey: "AIzaSyAq6QATs5YOVtHM46Lp9cXVY1c9d1qmr8g",
+const defaultSettings: IdeSettings = {
+    geminiApiKey: "",
     theme: "dark",
     fontSize: 14,
     tabSize: 4,
@@ -37,30 +38,30 @@ const initialSettings: Settings = {
     wordWrap: true,
 };
 
-export function SettingsModal({ isOpen, onClose, onSettingsChange }: SettingsModalProps) {
-  const [settings, setSettings] = useState<Settings>(initialSettings);
+export function SettingsModal({ isOpen, onClose, onSettingsChange, initialSettings }: SettingsModalProps) {
+  const [settings, setSettings] = useState<IdeSettings>(initialSettings || defaultSettings);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load settings from localStorage if they exist
-    const savedSettings = localStorage.getItem('ideSettings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+    // When the modal opens, sync with the latest settings from the parent
+    if (isOpen) {
+      setSettings(initialSettings || defaultSettings);
     }
-  }, []);
+  }, [isOpen, initialSettings]);
 
   const handleSave = () => {
-    localStorage.setItem('ideSettings', JSON.stringify(settings));
     onSettingsChange(settings);
     toast({ title: "Settings Saved!", description: "Your changes have been applied." });
     onClose();
   };
 
-  const handleValueChange = (key: keyof Settings, value: any) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    // Apply settings in real-time
-    onSettingsChange(newSettings);
+  const handleValueChange = (key: keyof IdeSettings, value: any) => {
+    setSettings(prev => {
+        const newSettings = { ...prev, [key]: value };
+        // Apply settings in real-time by calling the parent callback
+        onSettingsChange(newSettings);
+        return newSettings;
+    });
   };
   
   return (
@@ -76,7 +77,7 @@ export function SettingsModal({ isOpen, onClose, onSettingsChange }: SettingsMod
             <Input 
               id="geminiApiKey" 
               type="password" 
-              placeholder="AIzaSy..." 
+              placeholder="Enter your Gemini API key" 
               value={settings.geminiApiKey}
               onChange={(e) => handleValueChange('geminiApiKey', e.target.value)}
             />
@@ -92,9 +93,8 @@ export function SettingsModal({ isOpen, onClose, onSettingsChange }: SettingsMod
             >
               <SelectTrigger id="themeSelect"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="high-contrast">High Contrast</SelectItem>
+                <SelectItem value="dark">Dark (vs-dark)</SelectItem>
+                <SelectItem value="light">Light (vs)</SelectItem>
               </SelectContent>
             </Select>
           </div>
