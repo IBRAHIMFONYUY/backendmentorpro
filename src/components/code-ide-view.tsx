@@ -55,7 +55,7 @@ const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | (
       if (typeof window !== 'undefined') {
         localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    } catch (error) {
+    } catch (error) => {
       console.error(`Error saving state for key "${key}":`, error);
     }
   };
@@ -124,7 +124,7 @@ type RightPanelRef = {
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [files, setFiles] = usePersistentState<FileSystemNode>(`fileSystem_${challenge.id}`, challenge.fileSystem);
-  const [openTabs, setOpenTabs] = usePersistentState<string[]>(`openTabs_${challenge.id}`, ['/README.md', '/server.js']);
+  const [openTabs, setOpenTabs] = usePersistentState<string[]>(`openTabs_${challenge.id}`, ['/README.md']);
   const [activeTab, setActiveTab] = usePersistentState<string>(`activeTab_${challenge.id}`, '/README.md');
   const [openFolders, setOpenFolders] = usePersistentState<string[]>(`openFolders_${challenge.id}`, ['/']);
   const [currentWorkingDirectory, setCurrentWorkingDirectory] = usePersistentState<string>(`cwd_${challenge.id}`, '/');
@@ -271,7 +271,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
 
   const handleFileSelect = (path: string) => {
-    const node = findNode(path, augmentedChallenge.fileSystem);
+    const node = findNode(path, files);
     if (!node) return;
 
     if (node.type === 'file') {
@@ -756,7 +756,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           <ResizablePanelGroup direction="horizontal" className="flex-1">
               <ResizablePanel ref={filePanelRef} defaultSize={18} minSize={15} maxSize={30} collapsible className="hidden md:block ide-sidebar">
                   <FileExplorer
-                      files={augmentedChallenge.fileSystem}
+                      files={files}
                       activeTab={activeTab}
                       onFileSelect={handleFileSelect}
                       testResults={testResults}
@@ -781,7 +781,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       activeTab={activeTab}
                       setActiveTab={setActiveTab}
                       onCloseTab={handleCloseTab}
-                      files={augmentedChallenge.fileSystem}
+                      files={files}
                       onCodeChange={handleCodeChange}
                       editorSettings={settings}
                       onContextMenu={onEditorContextMenu}
@@ -794,8 +794,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       ref={rightPanelRef}
                       testResults={testResults}
                       files={files}
-                      handleRunCode={() => handleRunCode()}
-                      handleSubmit={() => handleSubmit()}
+                      handleRunCode={handleRunCode}
+                      handleSubmit={handleSubmit}
                       addFile={handleCreateFile}
                       addFolder={handleCreateFolder}
                       deleteNode={deleteNode}
