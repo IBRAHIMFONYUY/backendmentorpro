@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
+import type { Panel, PanelGroup } from "react-resizable-panels";
 import { NewProjectModal } from "./ide/new-project-modal";
 import { AiAssistantModal } from "./ai-assistant-modal";
 import { FileSystemNode, TestResult, initialFiles, initialTestResults } from "@/lib/ide-data";
@@ -144,6 +145,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
   const { toast } = useToast();
   
+  const rightPanelRef = useRef<Panel>(null);
+  const filePanelRef = useRef<Panel>(null);
+  const rightPanelLastSize = useRef<number>(35);
+
   const activeFileContent = findNode(activeTab, files)?.content ?? '';
 
   const handleRunCode = async (setActiveRightPanelTab: (tab: string) => void, setTerminalOutput: (updater: (prev: any[]) => any[]) => void) => {
@@ -245,6 +250,16 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     setCommandPaletteOpen(false);
   }
   
+  const runCodeAction = () => {
+    const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
+    if (rightPanel) rightPanel.runCode();
+  };
+
+  const submitAction = () => {
+    const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
+    if (rightPanel) rightPanel.submit();
+  };
+
   useEffect(() => {
     const handleGlobalClick = () => {
         setFileContextMenu(null);
@@ -253,13 +268,43 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     window.addEventListener('click', handleGlobalClick);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        setCommandPaletteOpen(v => !v);
-      }
-       if ((e.ctrlKey || e.metaKey) && e.key === ',') {
-        e.preventDefault();
-        setSettingsModalOpen(true);
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'p':
+            if (e.shiftKey) {
+              e.preventDefault();
+              setCommandPaletteOpen(v => !v);
+            }
+            break;
+          case ',':
+            e.preventDefault();
+            setSettingsModalOpen(true);
+            break;
+          case 'j':
+            e.preventDefault();
+            if (rightPanelRef.current) {
+                if (rightPanelRef.current.getSize() > 5) {
+                    rightPanelLastSize.current = rightPanelRef.current.getSize();
+                    rightPanelRef.current.resize(0);
+                } else {
+                    rightPanelRef.current.resize(rightPanelLastSize.current);
+                }
+            }
+            break;
+          case 'b':
+            e.preventDefault();
+            if (filePanelRef.current) {
+              filePanelRef.current.isCollapsed() ? filePanelRef.current.expand() : filePanelRef.current.collapse();
+            }
+            break;
+          case 'enter':
+             e.preventDefault();
+             submitAction();
+             break;
+        }
+      } else if (e.key === 'F5') {
+          e.preventDefault();
+          runCodeAction();
       }
     };
 
@@ -268,6 +313,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       window.removeEventListener('click', handleGlobalClick);
       window.removeEventListener('keydown', handleKeyDown);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onSettingsChange = (newSettings: IdeSettings) => {
@@ -573,10 +619,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
     const handleFind = () => editorInstanceRef.current?.trigger('find', 'actions.find', null);
     const handleFormat = () => editorInstanceRef.current?.getAction('editor.action.formatDocument')?.run();
-    const handleRun = () => {
-        const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
-        if (rightPanel) rightPanel.runCode();
-    };
+    const handleRun = () => runCodeAction();
 
     const getEditorContextMenuItems = (): any[] => {
         if (!editorContextMenu) return [];
@@ -624,21 +667,15 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           onNewProject={() => setNewProjectModalOpen(true)}
           onAiClick={() => setAiModalOpen(true)}
           onSettingsClick={() => setSettingsModalOpen(true)}
-          onRunCode={() => {
-            const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
-            if (rightPanel) rightPanel.runCode();
-          }}
-          onSubmit={() => {
-             const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
-            if (rightPanel) rightPanel.submit();
-          }}
+          onRunCode={runCodeAction}
+          onSubmit={submitAction}
           isRunning={isRunning}
           isSubmitting={isSubmitting}
         />
         
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="flex-1">
-              <ResizablePanel defaultSize={18} minSize={15} maxSize={30} className="hidden md:block ide-sidebar">
+              <ResizablePanel ref={filePanelRef} defaultSize={18} minSize={15} maxSize={30} collapsible className="hidden md:block ide-sidebar">
                   <FileExplorer
                       files={files}
                       activeTab={activeTab}
@@ -673,8 +710,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={35} minSize={20}>
+                <ResizablePanel ref={rightPanelRef} defaultSize={35} minSize={10}>
                   <RightPanel
+                      ref={rightPanelRef as any}
                       testResults={testResults}
                       files={files}
                       handleRunCode={handleRunCode}
@@ -693,5 +731,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   );
 }
 
+
+    
 
     
