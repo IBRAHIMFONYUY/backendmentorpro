@@ -714,4 +714,5 @@ export default function Home() {
     </div>
   );
 }
-, now enhance the buttons and links to be more interactive and add a gamified feel to them
+
+    
