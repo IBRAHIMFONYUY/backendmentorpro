@@ -13,6 +13,20 @@ export type Challenge = {
   testCases: TestResult[];
 };
 
+export const analyticsData = {
+  rawSummary: `Challenges Completed: 47/247. Overall Progress: 19%. Strengths identified in API fundamentals and basic Node.js. Areas for improvement: advanced data structures (35% accuracy) and system design (25% accuracy). Recent performance shows a dip in algorithm-based challenges. Recommendation: Focus on medium-level data structure challenges (e.g., Trees, Graphs) and review system design principles for caching and scalability.`,
+  weeklyActivity: [
+    { day: "Mon", challenges: 3 },
+    { day: "Tue", challenges: 5 },
+    { day: "Wed", challenges: 2 },
+    { day: "Thu", challenges: 4 },
+    { day: "Fri", challenges: 6 },
+    { day: "Sat", challenges: 1 },
+    { day: "Sun", challenges: 3 },
+  ],
+};
+
+
 export const challenges: Challenge[] = [
   // --- Easy Challenges ---
   {
