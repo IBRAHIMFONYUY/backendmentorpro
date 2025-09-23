@@ -20,7 +20,7 @@ import { CreateFileModal } from "./ide/create-file-modal";
 import { CreateFolderModal } from "./ide/create-folder-modal";
 import { ContextMenu } from "./ide/context-menu";
 import { RenameNodeModal } from "./ide/rename-node-modal";
-import { Copy, CopyPlus, Edit, Folder, ClipboardPaste, Trash2, FilePlus2 } from "lucide-react";
+import { Copy, CopyPlus, Edit, Folder, ClipboardPaste, Trash2, FilePlus2, Scissors } from "lucide-react";
 
 
 const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
@@ -286,6 +286,15 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, path });
+    
+    // Also select the folder being right-clicked
+    const node = findNode(path, files);
+    if(node?.type === 'folder') {
+        setSelectedFolder(path);
+    } else if (node?.type === 'file') {
+        const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+        setSelectedFolder(parentPath);
+    }
   };
 
   // --- Context Menu Actions ---
@@ -319,7 +328,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         const renameRecursively = (node: FileSystemNode, targetPath: string, newName: string): FileSystemNode => {
             if (node.path === targetPath) {
                 const newPath = targetPath.substring(0, targetPath.lastIndexOf('/') + 1) + newName;
-                return { ...node, name: newName, path: newPath }; // simplified path update
+                // A more robust solution would update paths of all children recursively
+                return { ...node, name: newName, path: newPath }; 
             }
             if (node.children) {
                 return { ...node, children: node.children.map(child => renameRecursively(child, targetPath, newName)) };
@@ -350,6 +360,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
         const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
             if (node.path === targetPath) {
+                 if (node.children?.some(c => c.name === newNode.name)) {
+                     toast({ variant: 'destructive', title: "A file/folder with that name already exists in this directory." });
+                     return node;
+                }
                 return { ...node, children: [...(node.children || []), newNode] };
             }
              if (node.children) {
@@ -375,6 +389,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         const newName = nodeToPaste.name;
         const newPath = `${destinationPath === '/' ? '' : destinationPath}/${newName}`;
         
+        let fileTree = files;
+
         // Simplified paste: just copy
         const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
             if (node.path === targetPath) {
@@ -391,12 +407,24 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         };
 
         const newNode = { ...nodeToPaste, path: newPath };
-        setFiles(prevFiles => addRecursively(prevFiles, destinationPath, newNode));
-        toast({ title: `Pasted "${newName}"` });
+        fileTree = addRecursively(fileTree, destinationPath, newNode);
 
         if (clipboard.operation === 'cut') {
-            deleteNode(clipboard.path);
+            const deleteRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode | null => {
+                if (node.path === targetPath) return null;
+                if (node.children) {
+                    const newChildren = node.children
+                        .map(child => deleteRecursively(child, targetPath))
+                        .filter(Boolean) as FileSystemNode[];
+                    return { ...node, children: newChildren };
+                }
+                return node;
+            };
+            fileTree = deleteRecursively(fileTree, clipboard.path)!;
         }
+        
+        setFiles(fileTree);
+        toast({ title: `Pasted "${newName}"` });
         setClipboard(null);
     };
 
@@ -408,13 +436,14 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         const isFolder = node.type === 'folder';
 
         return [
-            { label: "New File", icon: <FilePlus2/>, action: () => setCreateFileModalOpen(true), separator: true, disabled: !isFolder },
-            { label: "New Folder", icon: <Folder/>, action: () => setCreateFolderModalOpen(true), disabled: !isFolder },
+            { label: "New File", icon: <FilePlus2/>, action: () => setCreateFileModalOpen(true), disabled: !isFolder },
+            { label: "New Folder", icon: <Folder/>, action: () => setCreateFolderModalOpen(true), disabled: !isFolder, separator: true },
+            { label: "Cut", icon: <Scissors />, action: () => setClipboard({ path: contextMenu.path, operation: 'cut' }) },
             { label: "Copy", icon: <Copy />, action: () => setClipboard({ path: contextMenu.path, operation: 'copy' }) },
-            { label: "Paste", icon: <ClipboardPaste />, action: () => handlePaste(isFolder ? contextMenu.path : (contextMenu.path.substring(0, contextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard },
-            { label: "Duplicate", icon: <CopyPlus />, action: () => duplicateNode(contextMenu.path), separator: true },
-            { label: "Rename", icon: <Edit />, action: () => setRenameModal({ path: node.path, name: node.name, type: node.type }) },
-            { label: "Delete", icon: <Trash2 />, action: () => deleteNode(contextMenu.path), separator: true, },
+            { label: "Paste", icon: <ClipboardPaste />, action: () => handlePaste(isFolder ? contextMenu.path : (contextMenu.path.substring(0, contextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard, separator: true },
+            { label: "Duplicate", icon: <CopyPlus />, action: () => duplicateNode(contextMenu.path) },
+            { label: "Rename", icon: <Edit />, action: () => setRenameModal({ path: node.path, name: node.name, type: node.type }), separator: true },
+            { label: "Delete", icon: <Trash2 />, action: () => deleteNode(contextMenu.path), isDestructive: true },
         ];
     };
 

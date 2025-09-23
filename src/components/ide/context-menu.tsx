@@ -2,7 +2,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Cut, Copy, Paste, Edit, Trash2, CopyPlus, ClipboardPaste } from "lucide-react";
 
 interface MenuItem {
     label: string;
@@ -10,6 +9,7 @@ interface MenuItem {
     action: () => void;
     disabled?: boolean;
     separator?: boolean;
+    isDestructive?: boolean;
 }
 
 interface ContextMenuProps {
@@ -24,11 +24,11 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         <div 
             className="fixed z-50 glass-effect rounded-md shadow-lg p-1 w-48 text-sm"
             style={{ top: y, left: x }}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
         >
             <ul className="space-y-1">
                 {items.map((item, index) => (
-                    <div key={index}>
-                        {item.separator && <hr className="border-border my-1" />}
+                    <React.Fragment key={index}>
                         <li
                             onClick={() => {
                                 if (!item.disabled) {
@@ -40,15 +40,20 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                                 "flex items-center gap-2 p-2 rounded-sm cursor-pointer",
                                 item.disabled 
                                     ? "text-muted-foreground opacity-50 cursor-not-allowed"
+                                    : item.isDestructive
+                                    ? "text-red-500 hover:bg-red-500/10"
                                     : "hover:bg-primary/20 hover:text-primary-foreground"
                             )}
                         >
                             {item.icon}
                             <span>{item.label}</span>
                         </li>
-                    </div>
+                        {item.separator && <hr className="border-border my-1" />}
+                    </React.Fragment>
                 ))}
             </ul>
         </div>
     );
 }
+
+    

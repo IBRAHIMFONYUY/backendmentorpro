@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus2, ChevronsRightLeft, Rows, Columns } from 'lucide-react';
+import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus2, ChevronsRightLeft, Rows, Columns, Code, Braces } from 'lucide-react';
 import type { FileSystemNode, TestResult } from '@/lib/ide-data';
 import { cn } from '@/lib/utils';
 
@@ -42,10 +42,27 @@ export function FileExplorer({
     const progressValue = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
     const getFileIcon = (filename: string) => {
-        if (filename.endsWith('.js')) return <FileJson className="h-4 w-4 text-yellow-400 shrink-0" />;
-        if (filename.endsWith('.json')) return <FileJson className="h-4 w-4 text-green-400 shrink-0" />;
-        if (filename.endsWith('.md')) return <FileText className="h-4 w-4 text-blue-400 shrink-0" />;
-        return <File className="h-4 w-4 text-muted-foreground shrink-0" />;
+        const ext = filename.split('.').pop();
+        switch (ext) {
+            case 'js':
+            case 'jsx':
+                return <FileJson className="h-4 w-4 text-yellow-400 shrink-0" />;
+            case 'ts':
+            case 'tsx':
+                return <FileJson className="h-4 w-4 text-blue-400 shrink-0" />;
+            case 'json':
+                return <Braces className="h-4 w-4 text-green-400 shrink-0" />;
+            case 'md':
+                return <FileText className="h-4 w-4 text-blue-300 shrink-0" />;
+            case 'html':
+                return <Code className="h-4 w-4 text-orange-400 shrink-0" />;
+            case 'css':
+                 return <FileText className="h-4 w-4 text-sky-400 shrink-0" />;
+            case 'py':
+                 return <FileJson className="h-4 w-4 text-green-500 shrink-0" />;
+            default:
+                return <File className="h-4 w-4 text-muted-foreground shrink-0" />;
+        }
     }
 
     const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
@@ -58,7 +75,7 @@ export function FileExplorer({
                 <div 
                     className={cn(
                         "flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer",
-                        isSelected && "bg-muted/50"
+                        isSelected && "bg-blue-500/20"
                     )}
                     style={{ paddingLeft: `${level * 0.5}rem` }}
                     onClick={(e) => {
@@ -137,3 +154,5 @@ export function FileExplorer({
         </div>
     );
 }
+
+    
