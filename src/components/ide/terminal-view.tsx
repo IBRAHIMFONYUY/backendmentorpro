@@ -16,6 +16,7 @@ interface TerminalViewProps {
 
 const findNode = (path: string, root: FileSystemNode): FileSystemNode | null => {
     if (root.path === path) return root;
+    if (path === '/') return root;
     if (!root.children) return null;
     const parts = path.split('/').filter(p => p);
     let currentNode: FileSystemNode = root;
@@ -51,7 +52,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
 
     const resolvePath = (cwd: string, path: string) => {
         if (path.startsWith('/')) return path;
-        const newPath = new URL(path, `file://${cwd}/`).pathname;
+        const newPath = new URL(path, `file://${cwd.endsWith('/') ? cwd : cwd + '/'}`).pathname;
         return newPath;
     }
 
@@ -62,7 +63,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
         }
         setHistoryIndex(-1);
 
-        const args = command.split(' ');
+        const args = command.split(' ').filter(Boolean);
         const cmd = args[0].toLowerCase();
         
         let output: {type: string, content: string}[] = [];
@@ -92,43 +93,55 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                 output.push({type: 'output', content: content || '(empty)'});
                 break;
              case 'cd':
-                const newPath = resolvePath(currentWorkingDirectory, args[1] || '/');
-                const node = getNode(newPath);
-                if (node && node.type === 'folder') {
-                    setCurrentWorkingDirectory(newPath);
+                if (args[1]) {
+                    const newPath = resolvePath(currentWorkingDirectory, args[1]);
+                    const node = getNode(newPath);
+                    if (node && node.type === 'folder') {
+                        setCurrentWorkingDirectory(newPath);
+                    } else {
+                        output.push({type: 'error', content: `cd: ${args[1]}: No such directory`});
+                    }
                 } else {
-                    output.push({type: 'error', content: `cd: ${args[1]}: No such directory`});
+                    setCurrentWorkingDirectory('/');
                 }
                 break;
             case 'cat':
-                const path_to_cat = resolvePath(currentWorkingDirectory, args[1]);
-                const fileToCat = getNode(path_to_cat);
-                if (fileToCat && fileToCat.type === 'file') {
-                    output.push({type: 'output', content: fileToCat.content?.replace(/\n/g, '<br/>') || ''});
+                if (args[1]) {
+                    const path_to_cat = resolvePath(currentWorkingDirectory, args[1]);
+                    const fileToCat = getNode(path_to_cat);
+                    if (fileToCat && fileToCat.type === 'file') {
+                        output.push({type: 'output', content: fileToCat.content?.replace(/\n/g, '<br/>') || ''});
+                    } else {
+                        output.push({type: 'error', content: `cat: ${args[1]}: No such file`});
+                    }
                 } else {
-                    output.push({type: 'error', content: `cat: ${args[1]}: No such file`});
+                    output.push({type: 'error', content: 'cat: missing file operand'});
                 }
                 break;
             case 'node':
-                 const path_to_run = resolvePath(currentWorkingDirectory, args[1]);
-                 const fileToRun = getNode(path_to_run);
-                 if (fileToRun?.content) {
-                    output.push({type: 'output', content: `Executing ${args[1]}...`});
-                    if(fileToRun.content.includes("console.log")) {
-                        const matches = fileToRun.content.matchAll(/console.log\((.*?)\)/g);
-                        let hasOutput = false;
-                        for (const match of matches) {
-                           output.push({type: 'output', content: match ? match[1].replace(/['"`]/g, '') : "No output"});
-                           hasOutput = true;
-                        }
-                         if (!hasOutput) {
-                            output.push({type: 'output', content: 'Execution finished with no output.'});
-                         }
-                    } else {
-                        output.push({type: 'output', content: 'Execution finished with no output.'});
-                    }
+                 if (args[1]) {
+                    const path_to_run = resolvePath(currentWorkingDirectory, args[1]);
+                    const fileToRun = getNode(path_to_run);
+                    if (fileToRun?.content) {
+                       output.push({type: 'output', content: `Executing ${args[1]}...`});
+                       if(fileToRun.content.includes("console.log")) {
+                           const matches = fileToRun.content.matchAll(/console.log\((.*?)\)/g);
+                           let hasOutput = false;
+                           for (const match of matches) {
+                              output.push({type: 'output', content: match ? match[1].replace(/['"`]/g, '') : "No output"});
+                              hasOutput = true;
+                           }
+                            if (!hasOutput) {
+                               output.push({type: 'output', content: 'Execution finished with no output.'});
+                            }
+                       } else {
+                           output.push({type: 'output', content: 'Execution finished with no output.'});
+                       }
+                   } else {
+                       output.push({type: 'error', content: `File not found: ${args[1]}`});
+                   }
                 } else {
-                    output.push({type: 'error', content: `File not found: ${args[1]}`});
+                    output.push({type: 'error', content: 'node: missing file operand. Usage: node <filename>'});
                 }
                 break;
             case 'whoami':
@@ -168,7 +181,8 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
             case 'nano':
                 if (args[1]) {
                     const filePath = resolvePath(currentWorkingDirectory, args[1]);
-                    if (getContent(filePath) !== null) {
+                    const node = getNode(filePath);
+                    if (node && node.type === 'file') {
                         onOpenFile(filePath);
                     } else {
                          output.push({type: 'error', content: `${cmd}: ${args[1]}: No such file`});
@@ -201,7 +215,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `wc: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'wc: missing operand'});
+                    output.push({type: 'error', content: 'wc: missing file operand'});
                 }
                 break;
             case 'head':
@@ -213,7 +227,7 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `head: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'head: missing operand'});
+                    output.push({type: 'error', content: 'head: missing file operand'});
                 }
                 break;
             case 'tail':
@@ -225,10 +239,9 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
                         output.push({type: 'error', content: `tail: ${args[1]}: No such file`});
                     }
                 } else {
-                    output.push({type: 'error', content: 'tail: missing operand'});
+                    output.push({type: 'error', content: 'tail: missing file operand'});
                 }
                 break;
-            // ... add other cases
             default:
                output.push({type: 'error', content: `Command not found: ${command}. Type 'help'.`});
         }
@@ -294,3 +307,5 @@ export function TerminalView({ files, onRunTests, addNode, deleteNode, currentWo
          </div>
     );
 }
+
+    
