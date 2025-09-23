@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${sourceCodePro.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${sourceCodePro.variable} font-sans antialiased bg-background`}>
         <TooltipProvider>
           {children}
           <Toaster />

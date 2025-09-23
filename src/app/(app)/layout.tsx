@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { cn } from "@/lib/utils";
 import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Bell, Flame, Menu, Search, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -13,13 +12,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full bg-background">
       <aside className="fixed left-0 top-0 h-full w-64 glass-effect z-40 hidden lg:block">
         <MainNav />
       </aside>
 
-      <div className="lg:ml-64 flex flex-col w-full">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+      <div className="lg:pl-64 flex flex-col w-full">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
           <div className="lg:hidden">
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
               <SheetTrigger asChild>
@@ -29,45 +28,40 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 glass-effect border-r-0">
-                <SheetHeader>
-                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                  <SheetDescription className="sr-only">
-                    Main navigation links for the application.
-                  </SheetDescription>
-                </SheetHeader>
-                <MainNav />
+                  <SheetTitle className="sr-only">Menu</SheetTitle>
+                  <MainNav />
               </SheetContent>
             </Sheet>
           </div>
           
           <div className="hidden md:flex items-center w-full max-w-md">
             <div className="relative w-full">
-                <Input type="search" placeholder="Search challenges..." className="pl-10" />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input type="search" placeholder="Search challenges..." className="pl-10" />
             </div>
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-4">
             <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-accent-green to-accent-blue rounded-full flex items-center justify-center">
-                    <Flame className="text-white text-sm streak-flame" />
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-md">
+                    <Flame className="text-white" />
                 </div>
-                <span className="font-bold text-accent-yellow">7</span>
+                <span className="font-bold text-lg text-orange-400">7</span>
             </div>
             <div className="flex items-center gap-2">
-                <Star className="text-accent-yellow" />
-                <span className="font-bold">3,750</span>
+                <Star className="text-yellow-400" />
+                <span className="font-bold text-lg">3,750</span>
                 <span className="text-sm text-muted-foreground">XP</span>
             </div>
             
             <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-accent-blue" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent-red rounded-full flex items-center justify-center text-xs font-bold text-white">3</span>
+                <Bell className="h-5 w-5 text-primary" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center text-xs font-bold text-white">3</span>
             </Button>
             <UserNav />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-background">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
           {children}
         </main>
       </div>
