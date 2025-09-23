@@ -775,7 +775,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       openTabs={openTabs}
                       activeTab={activeTab}
                       setActiveTab={setActiveTab}
-                      onCloseTab={onCloseTab}
+                      onCloseTab={handleCloseTab}
                       files={augmentedChallenge.fileSystem}
                       onCodeChange={handleCodeChange}
                       editorSettings={settings}
@@ -792,7 +792,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       handleRunCode={() => handleRunCode()}
                       handleSubmit={() => handleSubmit()}
                       addFile={handleCreateFile}
-                      addFolder={handleCreateFolder}
+                      addFolder={addFolder}
                       deleteNode={deleteNode}
                       currentWorkingDirectory={currentWorkingDirectory}
                       setCurrentWorkingDirectory={setCurrentWorkingDirectory}
