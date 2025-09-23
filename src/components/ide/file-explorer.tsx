@@ -17,7 +17,7 @@ interface FileExplorerProps {
     onRefresh: () => void;
     onCollapseAll: () => void;
     onExpandAll: () => void;
-    openFolders: Set<string>;
+    openFolders: string[];
     toggleFolder: (path: string) => void;
     selectedFolder: string;
     onContextMenu: (e: React.MouseEvent, path: string) => void;
@@ -41,12 +41,13 @@ export function FileExplorer({
     const passedTests = testResults.filter(r => r.status === 'passed').length;
     const totalTests = testResults.length;
     const progressValue = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+    const openFoldersSet = new Set(openFolders);
 
     const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
         const isSelected = selectedFolder === node.path;
         
         if (node.type === 'folder') {
-          const isOpen = openFolders.has(node.path);
+          const isOpen = openFoldersSet.has(node.path);
           return (
             <div className="text-sm">
                 <div 
@@ -131,3 +132,5 @@ export function FileExplorer({
         </div>
     );
 }
+
+    

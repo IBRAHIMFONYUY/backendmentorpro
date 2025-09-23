@@ -30,7 +30,15 @@ const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | (
         return defaultValue;
       }
       const storedValue = localStorage.getItem(key);
-      return storedValue ? JSON.parse(storedValue) : defaultValue;
+      const parsed = storedValue ? JSON.parse(storedValue) : defaultValue;
+      
+      // Ensure openFolders is always an array
+      if (key === 'openFolders' && !Array.isArray(parsed)) {
+        return defaultValue;
+      }
+
+      return parsed;
+
     } catch (error) {
       return defaultValue;
     }
@@ -635,7 +643,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       onRefresh={handleRefresh}
                       onCollapseAll={handleCollapseAll}
                       onExpandAll={handleExpandAll}
-                      openFolders={new Set(openFolders)}
+                      openFolders={openFolders}
                       toggleFolder={toggleFolder}
                       selectedFolder={selectedFolder}
                       onContextMenu={onFileContextMenu}
@@ -678,3 +686,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+
+    
