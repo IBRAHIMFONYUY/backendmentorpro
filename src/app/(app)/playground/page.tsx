@@ -1,3 +1,4 @@
+
 import { CodeIdeView } from "@/components/code-ide-view";
 import { challenges } from "@/lib/data";
 
@@ -13,7 +14,12 @@ export default function ApiPlaygroundPage() {
                     A full-featured IDE to build, test, and debug your applications.
                 </p>
             </div>
-            <CodeIdeView challenge={defaultChallenge} />
+            <div className="h-[calc(100vh-12rem)]">
+              <CodeIdeView challenge={defaultChallenge} />
+            </div>
         </>
     );
 }
+
+
+    

@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { Challenge } from "@/lib/data";
+import type { Challenge } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CodeEditor } from "@/components/code-editor";
@@ -27,7 +28,7 @@ type TestResult = {
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [code, setCode] = useState(challenge.starterCode);
-  const [activeTab, setActiveTab] = useState("tests");
+  const [activeTab, setActiveTab] = useState("challenge");
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingHint, setIsGettingHint] = useState(false);
@@ -282,3 +283,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+
+    

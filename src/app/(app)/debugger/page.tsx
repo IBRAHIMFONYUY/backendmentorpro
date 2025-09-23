@@ -1,19 +1,16 @@
+
 import { CodeIdeView } from "@/components/code-ide-view";
 import { challenges } from "@/lib/data";
 
 export default function DebuggerPage() {
-  // Use a default challenge or the first one for the standalone IDE view
-  const defaultChallenge = challenges[0];
-
+  // This page is deprecated and will be removed. Redirect or show a message.
   return (
-    <>
-      <div className="space-y-1 mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Code Editor</h1>
-        <p className="text-muted-foreground">
-          A full-featured IDE to build, test, and debug your applications.
-        </p>
-      </div>
-      <CodeIdeView challenge={defaultChallenge} />
-    </>
+    <div className="flex flex-col items-center justify-center h-full text-center">
+        <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
+        <p className="text-muted-foreground">The Code Editor has been moved to a new location.</p>
+        <p className="text-muted-foreground">Please use the navigation to go to the new Code Editor page.</p>
+    </div>
   );
 }
+
+    

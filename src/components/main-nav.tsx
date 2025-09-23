@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -25,16 +26,16 @@ const mainNavItems = [
 ];
 
 const aiToolsNavItems = [
-  { href: "/ai-assistant", icon: Bot, label: "AI Assistant" },
-  { href: "/ai-code-review", icon: FileCode, label: "AI Code Review" },
-  { href: "/project-ideas", icon: Lightbulb, label: "Project Ideas" },
-  { href: "/tech-advisor", icon: BrainCircuit, label: "Tech Advisor" },
+  { href: "#", icon: Bot, label: "AI Assistant" },
+  { href: "#", icon: FileCode, label: "AI Code Review" },
+  { href: "#", icon: Lightbulb, label: "Project Ideas" },
+  { href: "#", icon: BrainCircuit, label: "Tech Advisor" },
 ];
 
 const userNavItems = [
-  { href: "/profile", icon: User, label: "Profile" },
-  { href: "/settings", icon: Settings, label: "Settings" },
-  { href: "/support", icon: HelpCircle, label: "Help & Support" },
+  { href: "#", icon: User, label: "Profile" },
+  { href: "#", icon: Settings, label: "Settings" },
+  { href: "#", icon: HelpCircle, label: "Help & Support" },
 ];
 
 const NavHeader = ({ children }: { children: React.ReactNode }) => (
@@ -105,3 +106,6 @@ export function MainNav() {
     </div>
   );
 }
+
+
+    
