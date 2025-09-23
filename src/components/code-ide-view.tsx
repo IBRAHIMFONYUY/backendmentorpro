@@ -8,7 +8,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resiz
 import type { Panel } from "react-resizable-panels";
 import { NewProjectModal } from "./ide/new-project-modal";
 import { AiAssistantModal } from "./ai-assistant-modal";
-import { FileSystemNode, TestResult, initialFiles, initialTestResults } from "@/lib/ide-data";
+import { FileSystemNode, TestResult } from "@/lib/ide-types";
 import { IdeTopBar } from "./ide/ide-top-bar";
 import { FileExplorer } from "./ide/file-explorer";
 import { EditorPanel } from "./ide/editor-panel";
@@ -26,25 +26,27 @@ import { languageMap } from "./ide/editor-panel";
 import { reviewChallengeSubmission } from "@/ai/flows/review-challenge-submission";
 
 const usePersistentState = <T,>(key: string, defaultValue: T): [T, (value: T | ((prevState: T) => T)) => void] => {
-  const [state, setState] = useState<T>(() => {
+  const [state, setState] = useState<T>(defaultValue);
+
+  useEffect(() => {
     try {
-      if (typeof window === 'undefined') {
-        return defaultValue;
+      if (typeof window !== 'undefined') {
+        const storedValue = localStorage.getItem(key);
+        if (storedValue) {
+          const parsed = JSON.parse(storedValue);
+          // Ensure openFolders is always an array
+          if (key.includes('openFolders') && !Array.isArray(parsed)) {
+            setState(Array.isArray(defaultValue) ? defaultValue : []);
+          } else {
+            setState(parsed);
+          }
+        }
       }
-      const storedValue = localStorage.getItem(key);
-      const parsed = storedValue ? JSON.parse(storedValue) : defaultValue;
-      
-      // Ensure openFolders is always an array
-      if (key === 'openFolders' && !Array.isArray(parsed)) {
-        return Array.isArray(defaultValue) ? defaultValue : [];
-      }
-
-      return parsed;
-
     } catch (error) {
-      return defaultValue;
+      setState(defaultValue);
     }
-  });
+  }, [key, defaultValue]);
+
 
   const setValue = (value: T | ((prevState: T) => T)) => {
     try {
@@ -121,13 +123,13 @@ type RightPanelRef = {
 };
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
-  const [files, setFiles] = usePersistentState<FileSystemNode>('fileSystem', initialFiles);
-  const [openTabs, setOpenTabs] = usePersistentState<string[]>('openTabs', ['/server.js']);
-  const [activeTab, setActiveTab] = usePersistentState<string>('activeTab', '/server.js');
-  const [openFolders, setOpenFolders] = usePersistentState<string[]>('openFolders', ['/']);
-  const [currentWorkingDirectory, setCurrentWorkingDirectory] = usePersistentState<string>('cwd', '/');
+  const [files, setFiles] = usePersistentState<FileSystemNode>(`fileSystem_${challenge.id}`, challenge.fileSystem);
+  const [openTabs, setOpenTabs] = usePersistentState<string[]>(`openTabs_${challenge.id}`, ['/README.md', '/server.js']);
+  const [activeTab, setActiveTab] = usePersistentState<string>(`activeTab_${challenge.id}`, '/README.md');
+  const [openFolders, setOpenFolders] = usePersistentState<string[]>(`openFolders_${challenge.id}`, ['/']);
+  const [currentWorkingDirectory, setCurrentWorkingDirectory] = usePersistentState<string>(`cwd_${challenge.id}`, '/');
 
-  const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
+  const [testResults, setTestResults] = useState<TestResult[]>(challenge.testCases);
   
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
@@ -156,6 +158,14 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [renameModal, setRenameModal] = useState<{ path: string; name: string, type: 'file' | 'folder' } | null>(null);
 
   const { toast } = useToast();
+
+  const augmentedChallenge: Challenge = {
+    ...challenge,
+    fileSystem: { ...challenge.fileSystem, children: [
+        ...(challenge.fileSystem.children || []),
+        { name: 'README.md', type: 'file', path: '/README.md', content: challenge.readme }
+    ]}
+  };
   
   const rightResizablePanelRef = useRef<Panel>(null);
   const filePanelRef = useRef<Panel>(null);
@@ -239,7 +249,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } catch (error) {
         console.error("Submission failed", error);
         toast({ variant: 'destructive', title: "Submission Error", description: "Could not get a response from the AI reviewer." });
-        setTestResults(initialTestResults);
+        setTestResults(challenge.testCases);
     } finally {
         setIsSubmitting(false);
     }
@@ -261,7 +271,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
 
   const handleFileSelect = (path: string) => {
-    const node = findNode(path, files);
+    const node = findNode(path, augmentedChallenge.fileSystem);
     if (!node) return;
 
     if (node.type === 'file') {
@@ -742,7 +752,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           <ResizablePanelGroup direction="horizontal" className="flex-1">
               <ResizablePanel ref={filePanelRef} defaultSize={18} minSize={15} maxSize={30} collapsible className="hidden md:block ide-sidebar">
                   <FileExplorer
-                      files={files}
+                      files={augmentedChallenge.fileSystem}
                       activeTab={activeTab}
                       onFileSelect={handleFileSelect}
                       testResults={testResults}
@@ -767,7 +777,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       activeTab={activeTab}
                       setActiveTab={setActiveTab}
                       onCloseTab={handleCloseTab}
-                      files={files}
+                      files={augmentedChallenge.fileSystem}
                       onCodeChange={handleCodeChange}
                       editorSettings={settings}
                       onContextMenu={onEditorContextMenu}

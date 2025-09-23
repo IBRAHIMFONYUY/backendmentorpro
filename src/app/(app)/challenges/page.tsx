@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Card,
@@ -22,7 +23,7 @@ export default function ChallengesPage() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {challenges.map((challenge) => (
-          <Card key={challenge.id} className="flex flex-col">
+          <Card key={challenge.id} className="flex flex-col glass-effect card-hover">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle>{challenge.title}</CardTitle>
@@ -32,7 +33,9 @@ export default function ChallengesPage() {
                       ? "secondary"
                       : challenge.difficulty === "Medium"
                       ? "default"
-                      : "destructive"
+                      : challenge.difficulty === "Hard"
+                      ? "destructive"
+                      : "outline"
                   }
                   className="capitalize"
                 >
@@ -53,7 +56,7 @@ export default function ChallengesPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full btn-primary-gradient">
                 <Link href={`/challenges/${challenge.slug}`}>Start Challenge</Link>
               </Button>
             </CardFooter>
