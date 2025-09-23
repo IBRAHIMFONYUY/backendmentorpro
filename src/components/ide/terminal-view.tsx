@@ -56,7 +56,6 @@ export const TerminalView = forwardRef(({ files, onRunTests, addFile, addFolder,
         handleTerminalCommand(command, true);
       },
       async runWithAIDebugger(code: string, language: string) {
-        setTerminalOutput(prev => [...prev, { type: 'output', content: `[AI Runner] Simulating execution of ${language} code...`}]);
         try {
             const result = await generateDebuggingAssistance({ code, language });
             const outputLine: TerminalLine = {
