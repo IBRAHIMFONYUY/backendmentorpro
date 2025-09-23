@@ -206,7 +206,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     
     setIsRunning(false);
     toast({ title: "Execution Finished", description: "Check the output panel." });
-  }, [activeTab, files, toast]);
+  }, [activeTab, files]);
 
   const serializeFileSystem = (node: FileSystemNode, indent = ''): string => {
     let result = `${indent}${node.name}${node.type === 'folder' ? '/' : ''}\n`;
@@ -259,7 +259,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } finally {
         setIsSubmitting(false);
     }
-  }, [challenge.title, challenge.description, files, challenge.testCases, toast, router]);
+  }, [challenge.title, challenge.description, challenge.testCases, files, router]);
   
   const handleCodeChange = (newCode: string) => {
       setFiles((prevFiles) => {
@@ -308,7 +308,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const submitAction = useCallback(() => {
     handleSubmit();
   }, [handleSubmit]);
-
+  
   const onNewProject = useCallback(() => setNewProjectModalOpen(true), []);
   const onAiClick = useCallback(() => setAiModalOpen(true), []);
   const onSettingsClick = useCallback(() => setSettingsModalOpen(true), []);
@@ -660,6 +660,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         setClipboard(null);
     };
 
+    const handleFind = () => editorInstanceRef.current?.trigger('find', 'actions.find', null);
+
     const getFileContextMenuItems = (): any[] => {
         if (!fileContextMenu) return [];
         const node = findNode(fileContextMenu.path, files);
@@ -679,16 +681,12 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         ];
     };
 
-    const handleFind = () => editorInstanceRef.current?.trigger('find', 'actions.find', null);
-    const handleFormat = () => editorInstanceRef.current?.getAction('editor.action.formatDocument')?.run();
-    const handleRun = () => runCodeAction();
-
     const getEditorContextMenuItems = (): any[] => {
         if (!editorContextMenu) return [];
         return [
-            { label: "Run", icon: <Play className="h-4 w-4"/>, action: handleRun },
+            { label: "Run", icon: <Play className="h-4 w-4"/>, action: runCodeAction },
             { label: "Find & Replace", icon: <Search className="h-4 w-4"/>, action: handleFind, separator: true },
-            { label: "Format Document", icon: <FileCog className="h-4 w-4"/>, action: handleFormat },
+            { label: "Format Document", icon: <FileCog className="h-4 w-4"/>, action: () => editorInstanceRef.current?.getAction('editor.action.formatDocument')?.run() },
             { label: "Block", icon: <Ban className="h-4 w-4"/>, action: () => toast({title: "Coming Soon!", description: "This feature is under development."}), disabled: true, separator: true },
             { label: "Cut", icon: <Scissors className="h-4 w-4" />, action: () => document.execCommand('cut') },
             { label: "Copy", icon: <Copy className="h-4 w-4" />, action: () => document.execCommand('copy') },
@@ -701,6 +699,37 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                 }
             }},
         ];
+    };
+    
+    const executeCommand = (command: string) => {
+        switch (command) {
+            case 'newProject':
+                onNewProject();
+                break;
+            case 'saveFile':
+                toast({ title: 'File Saved!', description: 'Your changes have been saved to local storage.' });
+                break;
+            case 'runCode':
+                runCodeAction();
+                break;
+            case 'runTests':
+                submitAction();
+                break;
+            case 'openSettings':
+                onSettingsClick();
+                break;
+            case 'findReplace':
+                handleFind();
+                break;
+            case 'createFile':
+                setCreateFileModalOpen(true);
+                break;
+            case 'createFolder':
+                setCreateFolderModalOpen(true);
+                break;
+            default:
+                console.warn(`Unknown command: ${command}`);
+        }
     };
 
 
@@ -803,5 +832,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
+    
 
     
