@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+
 const MentorChatInputSchema = z.object({
   message: z.string().describe("The user's message to the AI mentor."),
   media: z
@@ -58,11 +59,6 @@ const prompt = ai.definePrompt({
   - If the user provides an image or a file, analyze its content and incorporate your analysis into your response.
 
   User's message: {{{message}}}
-
-  {{#if media}}
-  The user has also uploaded the following file. Analyze it as part of your response:
-  File: {{media url=media.url}}
-  {{/if}}
 `,
 });
 
