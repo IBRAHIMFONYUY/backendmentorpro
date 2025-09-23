@@ -49,10 +49,10 @@ export function MainNav() {
 
   const renderNavItems = (items: typeof mainNavItems) => {
     return items.map((item) => {
-      const isActive = pathname.startsWith(item.href);
+      const isActive = pathname.startsWith(item.href) && item.href !== '#';
       return (
         <Link
-          key={item.href}
+          key={`${item.label}-${item.href}`}
           href={item.href}
           className={cn(
             "flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors",
@@ -106,6 +106,3 @@ export function MainNav() {
     </div>
   );
 }
-
-
-    
