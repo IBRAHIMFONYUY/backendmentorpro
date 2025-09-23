@@ -56,7 +56,7 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
         localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.error(`Error saving state for key "${key}":`, error);
+       console.error(`Error saving state for key "${key}":`, error);
     }
   };
 
@@ -203,7 +203,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     
     setIsRunning(false);
     toast({ title: "Execution Finished", description: "Check the output panel." });
-  }, [activeTab, files, toast]);
+  }, [activeTab, files]);
 
   const serializeFileSystem = (node: FileSystemNode, indent = ''): string => {
     let result = `${indent}${node.name}${node.type === 'folder' ? '/' : ''}\n`;
@@ -253,7 +253,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } finally {
         setIsSubmitting(false);
     }
-  }, [challenge.title, challenge.description, challenge.testCases, files, toast]);
+  }, [challenge.title, challenge.description, challenge.testCases, files, setTestResults]);
   
   const handleCodeChange = (newCode: string) => {
       setFiles((prevFiles) => {
