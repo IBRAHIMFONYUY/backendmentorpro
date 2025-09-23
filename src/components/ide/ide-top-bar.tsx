@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, ChevronRight, Cog, Loader2, PlusCircle, Send, Share2 } from 'lucide-react';
+import { ArrowLeft, Bot, ChevronRight, Cog, Loader2, Play, PlusCircle, Send, Share2 } from 'lucide-react';
 import type { Challenge } from '@/lib/data';
 
 interface IdeTopBarProps {
