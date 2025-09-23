@@ -16,9 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowUpRight, Crown, Bot, Check, Clock, Code, ExternalLink, Flame, Star, Trophy, Users } from "lucide-react";
 import Image from "next/image";
+import { AiAssistantModal } from "@/components/ai-assistant-modal";
 
 export default function DashboardPage() {
   const [showWelcome, setShowWelcome] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -48,15 +50,14 @@ export default function DashboardPage() {
   }
   
   const handleAskAI = () => {
-    toast({
-        title: 'Opening AI Mentor...',
-        description: 'Your personal assistant is ready to help.',
-    });
+    setAiModalOpen(true);
   }
 
   return (
     <>
       <WelcomeAssistant isOpen={showWelcome} onClose={() => setShowWelcome(false)} />
+      <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
+
        <div className="space-y-8">
             <div className="animate-fade-in-up">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">

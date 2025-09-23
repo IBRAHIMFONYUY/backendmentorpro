@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { FaDiscord, FaGithub, FaGoogle, FaNodeJs, FaPython, FaJava, FaAws, FaPhp, FaDocker, FaYoutube, FaTwitter } from 'react-icons/fa';
 import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AiAssistantModal } from '@/components/ai-assistant-modal';
 
 export default function Home() {
     const { toast } = useToast();
@@ -674,23 +675,7 @@ export default function Home() {
             </div>
         )}
 
-         {/* AI Modal */}
-        {aiModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-                 <div className="glass-effect rounded-2xl p-6 max-w-lg w-full relative">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold flex items-center gap-2"><Bot />AI Mentor Assistant</h2>
-                        <Button onClick={() => setAiModalOpen(false)} variant="ghost" size="icon" className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X /></Button>
-                    </div>
-                    {/* Simplified AI chat for brevity */}
-                    <div className="h-64 bg-background rounded-lg p-4 text-muted-foreground">AI chat placeholder...</div>
-                     <div className="mt-4 flex gap-2">
-                        <input type="text" placeholder="Ask the AI..." className="flex-grow bg-background border border-border rounded-lg px-4" />
-                        <Button className="btn-primary-gradient">Send</Button>
-                    </div>
-                </div>
-            </div>
-        )}
+        <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
     </div>
   );
 }
