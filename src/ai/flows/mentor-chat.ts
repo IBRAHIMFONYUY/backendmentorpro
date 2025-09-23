@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z, render} from 'genkit';
+import {z} from 'genkit';
 
 const MentorChatInputSchema = z.object({
   message: z.string().describe("The user's message to the AI mentor."),
@@ -77,10 +77,11 @@ const mentorChatFlow = ai.defineFlow(
       const {output} = await ai.generate({
         model: 'googleai/gemini-2.5-flash',
         prompt: [
-          { text: await render(prompt, input) },
+          { text: prompt.prompt! },
           { media: { url: input.media.url, contentType: input.media.contentType } },
         ],
         output: {schema: MentorChatOutputSchema},
+        input,
       });
       return output!;
     }
