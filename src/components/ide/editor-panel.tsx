@@ -13,6 +13,8 @@ interface EditorPanelProps {
     files: FileSystemNode;
     onCodeChange: (newCode: string) => void;
     editorSettings: IdeSettings | null;
+    onContextMenu: (e: React.MouseEvent) => void;
+    onEditorReady: (editor: editor.IStandaloneCodeEditor) => void;
 }
 
 const languageMap: { [key: string]: string } = {
@@ -30,12 +32,13 @@ const languageMap: { [key: string]: string } = {
 };
 
 
-export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, files, onCodeChange, editorSettings }: EditorPanelProps) {
+export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, files, onCodeChange, editorSettings, onContextMenu, onEditorReady }: EditorPanelProps) {
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const monacoRef = useRef<any>(null);
 
     const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
+        if (!node) return null;
         if (node.path === path) return node;
         if (node.children) {
             for (const child of node.children) {
@@ -101,6 +104,10 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
                 automaticLayout: true,
             });
 
+            if (editorRef.current) {
+              onEditorReady(editorRef.current);
+            }
+
             editorRef.current.onDidChangeModelContent(() => {
                 const value = editorRef.current?.getValue();
                 if (value !== activeFileContent) {
@@ -150,7 +157,11 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
                     </div>
                 ))}
             </div>
-            <div className="flex-1 relative bg-[#1e1e1e]" ref={editorContainerRef}>
+            <div 
+                className="flex-1 relative bg-[#1e1e1e]" 
+                ref={editorContainerRef}
+                onContextMenu={onContextMenu}
+            >
                 {openTabs.length === 0 && (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         <p>Select a file to begin editing or create a new one.</p>
@@ -160,5 +171,3 @@ export function EditorPanel({ openTabs, activeTab, setActiveTab, onCloseTab, fil
         </>
     );
 }
-
-    

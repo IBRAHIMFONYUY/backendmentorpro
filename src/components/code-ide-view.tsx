@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Script from "next/script";
 import type { Challenge } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +20,8 @@ import { CreateFileModal } from "./ide/create-file-modal";
 import { CreateFolderModal } from "./ide/create-folder-modal";
 import { ContextMenu } from "./ide/context-menu";
 import { RenameNodeModal } from "./ide/rename-node-modal";
-import { Copy, CopyPlus, Edit, Folder, ClipboardPaste, Trash2, FilePlus2, Scissors } from "lucide-react";
+import { ClipboardPaste, Copy, CopyPlus, Edit, FilePlus2, Folder, Scissors, Trash2, Search, FileCog, Play, Ban } from "lucide-react";
+import type { editor } from "monaco-editor";
 
 
 const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
@@ -90,9 +91,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [settings, setSettings] = useState<IdeSettings | null>(null);
+  const editorInstanceRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   
   // Context Menu State
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string } | null>(null);
+  const [fileContextMenu, setFileContextMenu] = useState<{ x: number; y: number; path: string } | null>(null);
+  const [editorContextMenu, setEditorContextMenu] = useState<{ x: number; y: number; } | null>(null);
   const [clipboard, setClipboard] = useState<{ path: string; operation: 'copy' | 'cut' } | null>(null);
   const [renameModal, setRenameModal] = useState<{ path: string; name: string, type: 'file' | 'folder' } | null>(null);
 
@@ -140,6 +143,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   
   const handleCodeChange = (newCode: string) => {
       const updateContent = (node: FileSystemNode): FileSystemNode => {
+          if (!node) return node;
           if (node.path === activeTab) {
               return { ...node, content: newCode };
           }
@@ -196,7 +200,10 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   }
   
   useEffect(() => {
-    const handleGlobalClick = () => setContextMenu(null);
+    const handleGlobalClick = () => {
+        setFileContextMenu(null);
+        setEditorContextMenu(null);
+    };
     window.addEventListener('click', handleGlobalClick);
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -219,8 +226,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
   const onSettingsChange = (newSettings: IdeSettings) => {
     setSettings(newSettings);
-    // Here you would apply settings to the Monaco editor instance
-    // For example: editorRef.current?.updateOptions({ fontSize: newSettings.fontSize });
+    // Settings are applied via useEffect in EditorPanel
     toast({ title: "Settings Updated", description: "Your changes have been applied." });
   };
   
@@ -282,10 +288,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       });
   };
 
-  const onContextMenu = (e: React.MouseEvent, path: string) => {
+  const onFileContextMenu = (e: React.MouseEvent, path: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, path });
+    setFileContextMenu({ x: e.clientX, y: e.clientY, path });
+    setEditorContextMenu(null);
     
     // Also select the folder being right-clicked
     const node = findNode(path, files);
@@ -297,9 +304,17 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     }
   };
 
+  const onEditorContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditorContextMenu({ x: e.clientX, y: e.clientY });
+    setFileContextMenu(null);
+  }
+
   // --- Context Menu Actions ---
     const deleteNode = (path: string) => {
         const deleteRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode | null => {
+            if (!node) return null;
             if (node.path === targetPath) {
                 return null;
             }
@@ -326,6 +341,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         }
 
         const renameRecursively = (node: FileSystemNode, targetPath: string, newName: string): FileSystemNode => {
+            if (!node) return node;
             if (node.path === targetPath) {
                 const newPath = targetPath.substring(0, targetPath.lastIndexOf('/') + 1) + newName;
                 // A more robust solution would update paths of all children recursively
@@ -359,6 +375,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         const newPath = parentPath === '/' ? `/${newName}` : `${parentPath}/${newName}`;
 
         const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
+            if (!node) return node;
             if (node.path === targetPath) {
                  if (node.children?.some(c => c.name === newNode.name)) {
                      toast({ variant: 'destructive', title: "A file/folder with that name already exists in this directory." });
@@ -393,6 +410,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
         // Simplified paste: just copy
         const addRecursively = (node: FileSystemNode, targetPath: string, newNode: FileSystemNode): FileSystemNode => {
+            if (!node) return node;
             if (node.path === targetPath) {
                 if (node.children?.find(c => c.name === newNode.name)) {
                      toast({ variant: 'destructive', title: "A file with that name already exists." });
@@ -411,6 +429,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
         if (clipboard.operation === 'cut') {
             const deleteRecursively = (node: FileSystemNode, targetPath: string): FileSystemNode | null => {
+                if (!node) return null;
                 if (node.path === targetPath) return null;
                 if (node.children) {
                     const newChildren = node.children
@@ -428,22 +447,42 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         setClipboard(null);
     };
 
-    const getContextMenuItems = (): any[] => {
-        if (!contextMenu) return [];
-        const node = findNode(contextMenu.path, files);
+    const getFileContextMenuItems = (): any[] => {
+        if (!fileContextMenu) return [];
+        const node = findNode(fileContextMenu.path, files);
         if (!node) return [];
 
         const isFolder = node.type === 'folder';
 
         return [
-            { label: "New File", icon: <FilePlus2/>, action: () => setCreateFileModalOpen(true), disabled: !isFolder },
-            { label: "New Folder", icon: <Folder/>, action: () => setCreateFolderModalOpen(true), disabled: !isFolder, separator: true },
-            { label: "Cut", icon: <Scissors />, action: () => setClipboard({ path: contextMenu.path, operation: 'cut' }) },
-            { label: "Copy", icon: <Copy />, action: () => setClipboard({ path: contextMenu.path, operation: 'copy' }) },
-            { label: "Paste", icon: <ClipboardPaste />, action: () => handlePaste(isFolder ? contextMenu.path : (contextMenu.path.substring(0, contextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard, separator: true },
-            { label: "Duplicate", icon: <CopyPlus />, action: () => duplicateNode(contextMenu.path) },
-            { label: "Rename", icon: <Edit />, action: () => setRenameModal({ path: node.path, name: node.name, type: node.type }), separator: true },
-            { label: "Delete", icon: <Trash2 />, action: () => deleteNode(contextMenu.path), isDestructive: true },
+            { label: "New File", icon: <FilePlus2 className="h-4 w-4" />, action: () => setCreateFileModalOpen(true), disabled: !isFolder },
+            { label: "New Folder", icon: <Folder className="h-4 w-4" />, action: () => setCreateFolderModalOpen(true), disabled: !isFolder, separator: true },
+            { label: "Cut", icon: <Scissors className="h-4 w-4" />, action: () => setClipboard({ path: fileContextMenu.path, operation: 'cut' }) },
+            { label: "Copy", icon: <Copy className="h-4 w-4" />, action: () => setClipboard({ path: fileContextMenu.path, operation: 'copy' }) },
+            { label: "Paste", icon: <ClipboardPaste className="h-4 w-4" />, action: () => handlePaste(isFolder ? fileContextMenu.path : (fileContextMenu.path.substring(0, fileContextMenu.path.lastIndexOf('/')) || '/')), disabled: !clipboard, separator: true },
+            { label: "Duplicate", icon: <CopyPlus className="h-4 w-4" />, action: () => duplicateNode(fileContextMenu.path) },
+            { label: "Rename", icon: <Edit className="h-4 w-4" />, action: () => setRenameModal({ path: node.path, name: node.name, type: node.type }), separator: true },
+            { label: "Delete", icon: <Trash2 className="h-4 w-4" />, action: () => deleteNode(fileContextMenu.path), isDestructive: true },
+        ];
+    };
+
+    const handleFind = () => editorInstanceRef.current?.trigger('find', 'actions.find', null);
+    const handleFormat = () => editorInstanceRef.current?.trigger('format', 'editor.action.formatDocument', null);
+    const handleRun = () => {
+        const rightPanel = document.querySelector<any>('[data-right-panel-ref]');
+        if (rightPanel) rightPanel.runCode();
+    };
+
+    const getEditorContextMenuItems = (): any[] => {
+        if (!editorContextMenu) return [];
+        return [
+            { label: "Run", icon: <Play className="h-4 w-4"/>, action: handleRun },
+            { label: "Find & Replace", icon: <Search className="h-4 w-4"/>, action: handleFind, separator: true },
+            { label: "Format Document", icon: <FileCog className="h-4 w-4"/>, action: handleFormat },
+            { label: "Block", icon: <Ban className="h-4 w-4"/>, action: () => toast({title: "Coming Soon!", description: "This feature is under development."}), disabled: true, separator: true },
+            { label: "Cut", icon: <Scissors className="h-4 w-4" />, action: () => document.execCommand('cut') },
+            { label: "Copy", icon: <Copy className="h-4 w-4" />, action: () => document.execCommand('copy') },
+            { label: "Paste", icon: <ClipboardPaste className="h-4 w-4" />, action: () => navigator.clipboard.readText().then(text => editorInstanceRef.current?.trigger('paste', 'paste', { text }))},
         ];
     };
 
@@ -470,10 +509,11 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           nodeType={renameModal.type}
         />
       )}
-      {contextMenu && <ContextMenu x={contextMenu.x} y={contextMenu.y} items={getContextMenuItems()} onClose={() => setContextMenu(null)} />}
+      {fileContextMenu && <ContextMenu x={fileContextMenu.x} y={fileContextMenu.y} items={getFileContextMenuItems()} onClose={() => setFileContextMenu(null)} />}
+      {editorContextMenu && <ContextMenu x={editorContextMenu.x} y={editorContextMenu.y} items={getEditorContextMenuItems()} onClose={() => setEditorContextMenu(null)} />}
 
 
-      <div className="h-screen w-screen flex flex-col bg-background ide-body" onClick={() => setContextMenu(null)} onContextMenu={(e) => onContextMenu(e, '/')}>
+      <div className="h-screen w-screen flex flex-col bg-background ide-body" onClick={() => { setFileContextMenu(null); setEditorContextMenu(null); }} onContextMenu={(e) => onFileContextMenu(e, '/')}>
         <IdeTopBar 
           challenge={challenge}
           onNewProject={() => setNewProjectModalOpen(true)}
@@ -509,7 +549,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       openFolders={openFolders}
                       toggleFolder={toggleFolder}
                       selectedFolder={selectedFolder}
-                      onContextMenu={onContextMenu}
+                      onContextMenu={onFileContextMenu}
                   />
               </ResizablePanel>
               <ResizableHandle withHandle className="hidden md:flex"/>
@@ -525,6 +565,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       files={files}
                       onCodeChange={handleCodeChange}
                       editorSettings={settings}
+                      onContextMenu={onEditorContextMenu}
+                      onEditorReady={(editor) => editorInstanceRef.current = editor}
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
@@ -545,5 +587,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
-    
