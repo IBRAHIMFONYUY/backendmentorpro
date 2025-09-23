@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Bell, Flame, Menu, Search, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -29,6 +29,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 glass-effect border-r-0">
+                <SheetHeader>
+                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                  <SheetDescription className="sr-only">
+                    Main navigation links for the application.
+                  </SheetDescription>
+                </SheetHeader>
                 <MainNav />
               </SheetContent>
             </Sheet>
