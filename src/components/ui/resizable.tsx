@@ -3,7 +3,7 @@
 import { GripVertical } from "lucide-react"
 import {
   Panel,
-  PanelGroup as ResizablePanelGroupPrimitive,
+  PanelGroup,
   PanelResizeHandle,
   type PanelGroupProps,
   type PanelProps,
@@ -16,7 +16,7 @@ const ResizablePanelGroup = ({
   className,
   ...props
 }: PanelGroupProps) => (
-  <ResizablePanelGroupPrimitive
+  <PanelGroup
     className={cn(
       "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
       className
