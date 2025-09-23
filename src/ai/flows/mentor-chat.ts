@@ -40,11 +40,7 @@ export async function mentorChat(input: MentorChatInput): Promise<MentorChatOutp
   return mentorChatFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'mentorChatPrompt',
-  input: {schema: MentorChatInputSchema},
-  output: {schema: MentorChatOutputSchema},
-  prompt: `You are Rahim, a senior developer mentor on the BackendMentorAI platform. Your purpose is to help users across the entire platform.
+const mentorPromptText = `You are Rahim, a senior developer mentor on the BackendMentorAI platform. Your purpose is to help users across the entire platform.
 
   Your Persona:
   - You are a friendly, encouraging, patient, and slightly witty senior engineer.
@@ -59,7 +55,14 @@ const prompt = ai.definePrompt({
   - If the user provides an image or a file, analyze its content and incorporate your analysis into your response.
 
   User's message: {{{message}}}
-`,
+`;
+
+
+const prompt = ai.definePrompt({
+  name: 'mentorChatPrompt',
+  input: {schema: MentorChatInputSchema},
+  output: {schema: MentorChatOutputSchema},
+  prompt: mentorPromptText,
 });
 
 const mentorChatFlow = ai.defineFlow(
@@ -70,14 +73,15 @@ const mentorChatFlow = ai.defineFlow(
   },
   async input => {
     if (input.media) {
+      const fullPrompt = `${mentorPromptText.replace('{{{message}}}', input.message)}`;
+
       const {output} = await ai.generate({
         model: 'googleai/gemini-2.5-flash',
         prompt: [
-          { text: prompt.prompt! },
+          { text: fullPrompt },
           { media: { url: input.media.url, contentType: input.media.contentType } },
         ],
         output: {schema: MentorChatOutputSchema},
-        input: input,
       });
       return output!;
     }
