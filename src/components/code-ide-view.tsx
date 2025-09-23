@@ -792,7 +792,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       handleRunCode={() => handleRunCode()}
                       handleSubmit={() => handleSubmit()}
                       addFile={handleCreateFile}
-                      addFolder={addFolder}
+                      addFolder={handleCreateFolder}
                       deleteNode={deleteNode}
                       currentWorkingDirectory={currentWorkingDirectory}
                       setCurrentWorkingDirectory={setCurrentWorkingDirectory}
