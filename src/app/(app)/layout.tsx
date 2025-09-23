@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { usePathname } from 'next/navigation';
 
 type Notification = {
   id: number;
@@ -30,6 +31,12 @@ const notifications: Notification[] = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const pathname = usePathname();
+
+  if (pathname === '/playground') {
+      return <>{children}</>;
+  }
+
 
   return (
     <>

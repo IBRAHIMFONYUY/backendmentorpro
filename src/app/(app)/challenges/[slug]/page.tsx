@@ -9,7 +9,11 @@ export default function Page({ params }: { params: { slug: string } }) {
     notFound();
   }
 
-  return <CodeIdeView challenge={challenge} />;
+  return (
+    <div className="fixed inset-0 bg-background">
+     <CodeIdeView challenge={challenge} />
+    </div>
+  );
 }
 
 export async function generateStaticParams() {

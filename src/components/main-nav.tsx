@@ -28,8 +28,8 @@ const mainNavItems = [
 const aiToolsNavItems = [
   { href: "#", icon: Bot, label: "AI Assistant" },
   { href: "#", icon: FileCode, label: "AI Code Review" },
-  { href: "#", icon: Lightbulb, label: "Project Ideas" },
-  { href: "#", icon: BrainCircuit, label: "Tech Advisor" },
+  { href: "#", label: "Project Ideas", icon: Lightbulb },
+  { href: "#", label: "Tech Advisor", icon: BrainCircuit },
 ];
 
 const userNavItems = [

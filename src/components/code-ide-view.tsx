@@ -5,11 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import type { Challenge } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { CodeEditor } from "@/components/code-editor";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Bot, CheckCircle, Loader2, XCircle, File, Folder, RefreshCw, ChevronsRight, ChevronsLeft, Play, Paperclip,
-  Plus, FolderPlus, Terminal, FlaskConical, TestTube, Share2, Cog, LayoutGrid, Eye, Search, GitBranch, Wifi, Minus, X, Columns, Expand, ArrowLeft, ChevronRight, FileJson, FileText, Check, Send
+  Bot, CheckCircle, Loader2, XCircle, File, Folder, RefreshCw, Play, Paperclip,
+  Plus, FolderPlus, Terminal, FlaskConical, TestTube, Share2, Cog, ArrowLeft, ChevronRight, FileJson, FileText, Send, Wifi, GitBranch, X, PlusCircle, FolderOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ApiPlaygroundView } from "./api-playground-view";
@@ -18,6 +16,7 @@ import { NewProjectModal } from "./ide/new-project-modal";
 import { AiAssistantModal } from "./ai-assistant-modal";
 import Link from "next/link";
 import { Progress } from "./ui/progress";
+import { ScrollArea } from "./ui/scroll-area";
 
 type TestResult = {
   name: string;
@@ -38,7 +37,7 @@ const initialFiles: FileSystemNode = {
     { name: '.env', type: 'file', path: 'rest-api-auth/.env', content: 'JWT_SECRET=your-secret-key' },
     { name: 'package.json', type: 'file', path: 'rest-api-auth/package.json', content: '{ "name": "rest-api-auth" }' },
     { name: 'README.md', type: 'file', path: 'rest-api-auth/README.md', content: '# REST API Auth Challenge' },
-    { name: 'server.js', type: 'file', path: 'rest-api-auth/server.js', content: `console.log('hello')` },
+    { name: 'server.js', type: 'file', path: 'rest-api-auth/server.js', content: `const express = require('express');\nconsole.log('hello from server.js')` },
   ]
 };
 
@@ -52,13 +51,15 @@ const initialTestResults: TestResult[] = [
 
 
 export function CodeIdeView({ challenge }: { challenge: Challenge }) {
-  const [code, setCode] = useState(challenge.starterCode);
-  const [activeTab, setActiveTab] = useState("server.js");
+  const [files, setFiles] = useState<FileSystemNode>(initialFiles);
+  const [openTabs, setOpenTabs] = useState<string[]>(['rest-api-auth/server.js']);
+  const [activeTab, setActiveTab] = useState('rest-api-auth/server.js');
   const [rightPanelTab, setRightPanelTab] = useState('output');
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
   const [terminalInput, setTerminalInput] = useState('');
   const [terminalOutput, setTerminalOutput] = useState([
     {type: 'output', content: 'Welcome to Backend Mentor Terminal'},
@@ -66,7 +67,6 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     {type: 'ai', content: '[AI] Rahim is ready to assist you!'},
   ]);
   const terminalRef = useRef<HTMLDivElement>(null);
-
   const { toast } = useToast();
   
   useEffect(() => {
@@ -75,12 +75,25 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     }
   }, [terminalOutput]);
 
+  const findNode = (path: string, node: FileSystemNode): FileSystemNode | null => {
+      if (node.path === path) return node;
+      if (node.children) {
+          for (const child of node.children) {
+              const found = findNode(path, child);
+              if (found) return found;
+          }
+      }
+      return null;
+  }
+
+  const activeFileContent = findNode(activeTab, files)?.content ?? '';
+
   const handleTerminalCommand = (command: string) => {
-    const newOutput = [...terminalOutput, {type: 'command', content: `/ ${command}`}];
+    const newOutput = [...terminalOutput, {type: 'command', content: `> ${command}`}];
     
     // Simulate command execution
     if (command.toLowerCase() === 'help') {
-      newOutput.push({type: 'output', content: 'Available commands: ls, clear, test'});
+      newOutput.push({type: 'output', content: 'Available commands: ls, clear, test, node'});
     } else if (command.toLowerCase() === 'clear') {
       setTerminalOutput([]);
       return;
@@ -88,7 +101,16 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         newOutput.push({type: 'output', content: 'Running tests...'});
         handleSubmit();
     } else if (command.toLowerCase() === 'ls') {
-        newOutput.push({type: 'output', content: initialFiles.children?.map(f => f.name).join('  ') || ''});
+        newOutput.push({type: 'output', content: files.children?.map(f => f.name).join('  ') || ''});
+    } else if (command.toLowerCase().startsWith('node ')) {
+        const fileName = command.split(' ')[1];
+        const fileToRun = files.children?.find(f => f.name === fileName);
+        if (fileToRun) {
+            newOutput.push({type: 'output', content: `Executing ${fileName}...`});
+            newOutput.push({type: 'output', content: fileToRun.content || ''});
+        } else {
+            newOutput.push({type: 'error', content: `File not found: ${fileName}`});
+        }
     }
     else {
        newOutput.push({type: 'error', content: `Command not found: ${command}`});
@@ -102,9 +124,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const handleRunCode = async () => {
     setIsRunning(true);
     setRightPanelTab("output");
-    setTerminalOutput(prev => [...prev, {type: 'command', content: '$ node server.js'}]);
+    setTerminalOutput(prev => [...prev, {type: 'command', content: `$ node ${activeTab}`}]);
     await new Promise(resolve => setTimeout(resolve, 500));
-    setTerminalOutput(prev => [...prev, {type: 'output', content: 'hello'}]);
+    setTerminalOutput(prev => [...prev, {type: 'output', content: activeFileContent.split('\n')[1] || 'No output'}]);
     await new Promise(resolve => setTimeout(resolve, 200));
     setTerminalOutput(prev => [...prev, {type: 'success', content: 'Execution finished.'}]);
     setIsRunning(false);
@@ -115,21 +137,22 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     setRightPanelTab("tests");
     toast({ title: "Submitting solution", description: "Running all test cases..." });
 
-    // Reset tests to running
     setTestResults(prev => prev.map(t => ({...t, status: 'running'})));
 
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Final test results
-    setTestResults([
+    const finalResults = [
       { name: "Basic server setup", status: 'passed', output: "Completed" },
       { name: "JWT implementation", status: 'passed', output: "Completed" },
       { name: "Login endpoint", status: 'passed', output: "Completed" },
       { name: "Protected routes", status: 'passed', output: "Completed" },
       { name: "Error handling", status: 'failed', output: "Missing error handling for expired tokens" },
-    ]);
+    ]
+    setTestResults(finalResults);
     setIsSubmitting(false);
-    toast({ title: "Tests finished", description: "4 out of 5 tests passed." });
+
+    const passedCount = finalResults.filter(r => r.status === 'passed').length;
+    toast({ title: "Tests finished", description: `${passedCount} out of 5 tests passed.` });
   };
 
   const getFileIcon = (filename: string) => {
@@ -139,43 +162,93 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     return <File className="h-4 w-4 text-muted-foreground" />;
   }
   
-  const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => (
-    <div className="space-y-1">
-      <div className="flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer" style={{ paddingLeft: `${level * 1}rem` }}>
-        {node.type === 'folder' ? <Folder className="h-4 w-4 text-blue-400" /> : getFileIcon(node.name)}
-        <span className="text-sm">{node.name}</span>
-      </div>
-      {node.type === 'folder' && node.children && (
-        <div className="pl-2">
-          {node.children.map(child => <FileTree key={child.path} node={child} level={level + 1} />)}
+  const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
+    const [isOpen, setIsOpen] = useState(true);
+    const isFolder = node.type === 'folder';
+
+    const handleToggle = () => {
+        if (isFolder) {
+            setIsOpen(!isOpen);
+        }
+    };
+    
+    const handleFileClick = (path: string) => {
+        if (!openTabs.includes(path)) {
+            setOpenTabs([...openTabs, path]);
+        }
+        setActiveTab(path);
+    };
+
+
+    return (
+        <div className="text-sm">
+            <div 
+                className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer ${activeTab === node.path && !isFolder ? 'bg-primary/20' : ''}`} 
+                style={{ paddingLeft: `${level * 1.5}rem` }}
+                onClick={() => isFolder ? handleToggle() : handleFileClick(node.path)}
+            >
+                {isFolder ? (
+                    isOpen ? <FolderOpen className="h-4 w-4 text-blue-400" /> : <Folder className="h-4 w-4 text-blue-400" />
+                ) : getFileIcon(node.name)}
+                <span className="text-sm">{node.name}</span>
+            </div>
+            {isFolder && isOpen && node.children && (
+                <div>
+                    {node.children.map(child => <FileTree key={child.path} node={child} level={level + 1} />)}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
+  }
 
   const passedTests = testResults.filter(r => r.status === 'passed').length;
   const totalTests = testResults.length;
-  const progressValue = (passedTests / totalTests) * 100;
+  const progressValue = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+  
+  const handleCodeChange = (newCode: string) => {
+      const updateContent = (node: FileSystemNode): FileSystemNode => {
+          if (node.path === activeTab) {
+              return { ...node, content: newCode };
+          }
+          if (node.children) {
+              return { ...node, children: node.children.map(updateContent) };
+          }
+          return node;
+      };
+      setFiles(updateContent(files));
+  }
+
+  const handleCloseTab = (path: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const newTabs = openTabs.filter(t => t !== path);
+      setOpenTabs(newTabs);
+      if (activeTab === path) {
+          setActiveTab(newTabs[0] || '');
+      }
+  }
 
   return (
     <>
     <AiAssistantModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
+    <NewProjectModal isOpen={newProjectModalOpen} onClose={() => setNewProjectModalOpen(false)} />
 
-    <div className="h-screen w-full flex flex-col bg-[#0d1117] text-gray-300 font-mono text-sm">
+    <div className="h-screen w-full flex flex-col bg-[#020617] text-gray-300 font-mono text-sm">
       {/* Top Bar */}
-      <div className="h-10 bg-[#161b22] border-b border-border flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard"><ArrowLeft className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
-          <span className="text-gray-400">Backend Mentor</span>
-          <ChevronRight className="h-4 w-4 text-gray-600" />
-          <span className="text-white font-medium">rest-api-auth</span>
-        </div>
-        <div className="flex items-center gap-4 text-xs text-gray-400">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span>Auto-save enabled</span>
+      <div className="h-12 bg-gray-900 border-b border-blue-500/20 flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="icon" onClick={() => setNewProjectModalOpen(true)}><PlusCircle className="h-5 w-5"/></Button>
+          <Link href="/dashboard" className="text-gray-400 hover:text-white"><ArrowLeft className="h-5 w-5" /></Link>
+          <div className="breadcrumb flex items-center space-x-2 text-sm">
+            <span className="text-gray-400">Backend Mentor</span>
+            <ChevronRight className="h-4 w-4 text-gray-600"/>
+            <span className="text-primary">{challenge.title}</span>
           </div>
-          <span>11:43</span>
+        </div>
+        <div className="flex items-center space-x-4 text-xs text-gray-400">
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span>Auto-save enabled</span>
+            </div>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => setAiModalOpen(true)} title="AI Assistant"><Bot className="h-5 w-5"/></Button>
@@ -194,9 +267,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       <div className="flex-1 flex overflow-hidden">
         <ResizablePanelGroup direction="horizontal">
             <ResizablePanel defaultSize={18} minSize={15} maxSize={30}>
-                <div className="flex flex-col h-full bg-[#161b22] text-gray-400">
-                    <div className="p-3 border-b border-border flex items-center justify-between">
-                        <h3 className="text-xs font-bold tracking-wider uppercase">Explorer</h3>
+                <div className="flex flex-col h-full bg-[#0f172a] text-gray-400">
+                    <div className="p-3 border-b border-gray-700 flex items-center justify-between">
+                        <h3 className="text-xs font-semibold tracking-wider uppercase">Explorer</h3>
                         <div className="flex gap-2">
                             <button title="New File" className="hover:text-white"><File className="h-4 w-4" /></button>
                             <button title="New Folder" className="hover:text-white"><FolderPlus className="h-4 w-4" /></button>
@@ -204,9 +277,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                         </div>
                     </div>
                     <ScrollArea className="flex-grow p-2">
-                       <FileTree node={initialFiles} />
+                       <FileTree node={files} />
                     </ScrollArea>
-                    <div className="p-3 border-t border-border">
+                    <div className="p-3 border-t border-gray-700">
                       <div className="text-xs text-muted-foreground mb-2 flex justify-between">
                         <span>Progress</span>
                         <span>{passedTests}/{totalTests} tests</span>
@@ -219,7 +292,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                                result.status === 'failed' ? <XCircle className="h-3.5 w-3.5 text-red-500" /> :
                                <Loader2 className="h-3.5 w-3.5 text-yellow-500 animate-spin"/>
                               }
-                              <span className={result.status === 'failed' ? 'text-red-400' : ''}>{result.name}</span>
+                              <span className={`${result.status === 'failed' ? 'text-red-400' : ''} truncate`}>{result.name}</span>
                             </div>
                           ))}
                        </div>
@@ -231,24 +304,26 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
           <ResizablePanel className="flex-1 flex flex-col">
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={65} minSize={25} className="relative flex flex-col">
-                 <div className="h-10 bg-[#0d1117] border-b border-border flex items-center">
-                    <div className={`px-4 py-2 text-sm flex items-center gap-2 border-r border-border cursor-pointer bg-[#161b22]`}>
-                      {getFileIcon('server.js')}
-                      <span>server.js</span>
-                      <X className="h-4 w-4 hover:text-white"/>
-                    </div>
+                 <div className="h-10 bg-gray-800 border-b border-gray-700 flex items-center">
+                    {openTabs.map(path => (
+                        <div key={path} onClick={() => setActiveTab(path)} className={`px-4 py-2 text-sm flex items-center gap-2 border-r border-gray-700 cursor-pointer ${activeTab === path ? 'tab-active text-white' : 'text-gray-400'}`}>
+                            {getFileIcon(path.split('/').pop() || '')}
+                            <span>{path.split('/').pop()}</span>
+                            <X className="h-4 w-4 hover:text-white" onClick={(e) => handleCloseTab(path, e)}/>
+                        </div>
+                    ))}
                  </div>
                  <div className="flex-1 relative">
-                  <CodeEditor value={code} onChange={(e) => setCode(e.target.value)} className="bg-[#0d1117] border-none"/>
+                    <CodeEditor value={activeFileContent} onChange={(e) => handleCodeChange(e.target.value)} className="bg-[#0d1117] border-none"/>
                  </div>
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel defaultSize={35} minSize={20}>
                 <div className="h-full flex flex-col bg-[#161b22]">
-                  <div className="flex items-center px-2 border-b border-border h-10 shrink-0">
-                      <button onClick={() => setRightPanelTab('output')} className={`px-4 py-2 text-sm flex items-center gap-2 ${rightPanelTab === 'output' ? 'text-white border-b-2 border-blue-500' : 'text-gray-400'}`}><Terminal className="h-4 w-4"/>Output</button>
-                      <button onClick={() => setRightPanelTab('api')} className={`px-4 py-2 text-sm flex items-center gap-2 ${rightPanelTab === 'api' ? 'text-white border-b-2 border-blue-500' : 'text-gray-400'}`}><FlaskConical className="h-4 w-4"/>API Test</button>
-                      <button onClick={() => setRightPanelTab('tests')} className={`px-4 py-2 text-sm flex items-center gap-2 ${rightPanelTab === 'tests' ? 'text-white border-b-2 border-blue-500' : 'text-gray-400'}`}><TestTube className="h-4 w-4"/>Tests</button>
+                  <div className="flex items-center px-2 border-b border-gray-700 h-10 shrink-0">
+                      <button onClick={() => setRightPanelTab('output')} className={`px-4 py-2 text-sm flex items-center gap-2 ${rightPanelTab === 'output' ? 'tab-active' : 'text-gray-400'}`}><Terminal className="h-4 w-4"/>Output</button>
+                      <button onClick={() => setRightPanelTab('api')} className={`px-4 py-2 text-sm flex items-center gap-2 ${rightPanelTab === 'api' ? 'tab-active' : 'text-gray-400'}`}><FlaskConical className="h-4 w-4"/>API Test</button>
+                      <button onClick={() => setRightPanelTab('tests')} className={`px-4 py-2 text-sm flex items-center gap-2 ${rightPanelTab === 'tests' ? 'tab-active' : 'text-gray-400'}`}><TestTube className="h-4 w-4"/>Tests</button>
                   </div>
                     
                     <div className="flex-grow overflow-y-auto">
@@ -268,7 +343,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                           )}
                            {rightPanelTab === 'output' && (
                              <div className="h-full flex flex-col">
-                                <div className="p-2 border-b border-border text-xs flex justify-between items-center">
+                                <div className="p-2 border-b border-gray-700 text-xs flex justify-between items-center">
                                   <span>Terminal</span>
                                   <div className="flex items-center gap-1">
                                     <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
@@ -284,7 +359,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                                   ))}
                                 </div>
                                 <div className="flex bg-[#0d1117] p-1">
-                                    <span className="text-green-400">/</span>
+                                    <span className="text-green-400">{'>'}</span>
                                     <input
                                       type="text"
                                       value={terminalInput}
@@ -314,10 +389,9 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
       {/* Status Bar */}
       <div className="h-6 bg-[#007acc] text-white flex items-center justify-between px-4 text-xs shrink-0">
           <div className="flex items-center gap-4">
-              <span>Ln 1, Col 18</span>
+              <span>Ln 1, Col 1</span>
               <span>Javascript</span>
               <span>UTF-8</span>
-              <span>19 Bytes</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1"><Wifi /><span>Connected</span></div>
