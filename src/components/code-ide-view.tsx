@@ -203,7 +203,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     
     setIsRunning(false);
     toast({ title: "Execution Finished", description: "Check the output panel." });
-  }, [activeTab, files]);
+  }, [activeTab, files, toast]);
 
   const serializeFileSystem = (node: FileSystemNode, indent = ''): string => {
     let result = `${indent}${node.name}${node.type === 'folder' ? '/' : ''}\n`;
@@ -253,7 +253,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     } finally {
         setIsSubmitting(false);
     }
-  }, [challenge.title, challenge.description, challenge.testCases, files, setTestResults]);
+  }, [challenge.title, challenge.description, files, challenge.testCases, toast]);
   
   const handleCodeChange = (newCode: string) => {
       setFiles((prevFiles) => {
@@ -795,7 +795,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       testResults={testResults}
                       files={files}
                       handleRunCode={handleRunCode}
-                      handleSubmit={handleSubmit}
+                      handleSubmit={submitAction}
                       addFile={handleCreateFile}
                       addFolder={handleCreateFolder}
                       deleteNode={deleteNode}
@@ -813,3 +813,4 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
+
