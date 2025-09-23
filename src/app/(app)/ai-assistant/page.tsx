@@ -1,17 +1,30 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bot, Loader2, Send, User, Paperclip, Mic, Image as ImageIcon, StopCircle } from 'lucide-react';
+import { Bot, Loader2, Send, User, Paperclip, Mic, Image as ImageIcon, StopCircle, X, File as FileIcon } from 'lucide-react';
 import { mentorChat } from '@/ai/flows/mentor-chat';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { speechToText } from '@/ai/flows/speech-to-text';
+import Image from 'next/image';
 
 interface Message {
   type: 'user' | 'ai';
   text: string;
+  media?: {
+    url: string;
+    contentType: string;
+    name: string;
+  };
+}
+
+interface UploadedMedia {
+    url: string;
+    contentType: string;
+    name: string;
 }
 
 export default function AiAssistantPage() {
@@ -23,11 +36,15 @@ export default function AiAssistantPage() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia | null>(null);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     // Auto-scroll to bottom
@@ -41,15 +58,23 @@ export default function AiAssistantPage() {
 
   const handleSendMessage = async (messageText?: string) => {
     const currentInput = typeof messageText === 'string' ? messageText : input;
-    if (!currentInput.trim() || isLoading) return;
+    if ((!currentInput.trim() && !uploadedMedia) || isLoading) return;
 
-    const userMessage: Message = { type: 'user', text: currentInput };
+    const userMessage: Message = { 
+        type: 'user', 
+        text: currentInput,
+        ...(uploadedMedia && { media: uploadedMedia }),
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setUploadedMedia(null);
     setIsLoading(true);
 
     try {
-      const result = await mentorChat({ message: currentInput });
+      const result = await mentorChat({ 
+        message: currentInput, 
+        ...(uploadedMedia && { media: uploadedMedia }),
+      });
       const aiMessage: Message = { type: 'ai', text: result.response };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
@@ -131,6 +156,21 @@ export default function AiAssistantPage() {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        setUploadedMedia({
+            url: loadEvent.target?.result as string,
+            contentType: file.type,
+            name: file.name
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-full">
@@ -158,17 +198,29 @@ export default function AiAssistantPage() {
                   </div>
                 )}
                 <div
-                  className={`rounded-xl px-4 py-3 max-w-2xl text-base ${
+                  className={`rounded-xl px-4 py-3 max-w-2xl text-base space-y-3 ${
                     message.type === 'user'
                       ? 'bg-primary/20 text-foreground'
                       : 'glass-effect'
                   }`}
                 >
-                  <p
+                  {message.text && <p
                     dangerouslySetInnerHTML={{
                       __html: message.text.replace(/\n/g, '<br />'),
                     }}
-                  />
+                  />}
+                  {message.media && (
+                    <div className="p-2 bg-background/50 rounded-lg">
+                      {message.media.contentType.startsWith('image/') ? (
+                        <Image src={message.media.url} alt="Uploaded content" width={200} height={200} className="rounded-md" />
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm">
+                          <FileIcon className="h-5 w-5" />
+                          <span>{message.media.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {message.type === 'user' && (
                   <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shrink-0">
@@ -192,50 +244,72 @@ export default function AiAssistantPage() {
       </div>
 
        <div className="p-4 border-t">
-        <div className="max-w-4xl mx-auto bg-background/50 border border-border rounded-xl flex items-center">
-           <Button
-              onClick={() => toast({ title: 'File uploads coming soon!' })}
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-primary shrink-0"
-            >
-              <Paperclip />
-            </Button>
-            <Button
-              onClick={() => toast({ title: 'Image uploads coming soon!' })}
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-primary shrink-0"
-            >
-              <ImageIcon />
-            </Button>
-          <Input
-            id="aiInput"
-            type="text"
-            placeholder="Ask for advice, like 'How do I handle authentication in a microservices architecture?'"
-            className="bg-transparent border-0 h-14 text-base text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            disabled={isLoading || isRecording}
-          />
-           <Button
-              onClick={handleMicClick}
-              variant="ghost"
-              size="icon"
-              className={`text-muted-foreground shrink-0 ${isRecording ? 'text-red-500 hover:text-red-600' : 'hover:text-primary'}`}
-              disabled={isLoading}
-            >
-              {isRecording ? <StopCircle /> : <Mic />}
-            </Button>
-            <Button
-              id="sendAiMessage"
-              className="btn-primary-gradient text-white rounded-lg w-10 h-10 p-0 mr-2 shrink-0"
-              onClick={() => handleSendMessage()}
-              disabled={isLoading || !input.trim() || isRecording}
-            >
-              <Send className="h-5 w-5" />
-            </Button>
+        <div className="max-w-4xl mx-auto">
+             {uploadedMedia && (
+              <div className="mb-2 p-2 bg-muted/50 rounded-lg flex items-center justify-between text-sm">
+                 <div className="flex items-center gap-2 overflow-hidden">
+                    {uploadedMedia.contentType.startsWith('image/') ? (
+                      <Image src={uploadedMedia.url} alt="Preview" width={24} height={24} className="rounded-sm"/>
+                    ) : (
+                      <FileIcon className="h-5 w-5 shrink-0" />
+                    )}
+                    <span className="truncate">{uploadedMedia.name}</span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setUploadedMedia(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="bg-background/50 border border-border rounded-xl flex items-center">
+               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+               <input type="file" ref={imageInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+
+               <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary shrink-0"
+                  disabled={isLoading || isRecording || !!uploadedMedia}
+                >
+                  <Paperclip />
+                </Button>
+                <Button
+                  onClick={() => imageInputRef.current?.click()}
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary shrink-0"
+                  disabled={isLoading || isRecording || !!uploadedMedia}
+                >
+                  <ImageIcon />
+                </Button>
+              <Input
+                id="aiInput"
+                type="text"
+                placeholder="Ask for advice, like 'How do I handle authentication in a microservices architecture?'"
+                className="bg-transparent border-0 h-14 text-base text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 flex-1"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                disabled={isLoading || isRecording}
+              />
+               <Button
+                  onClick={handleMicClick}
+                  variant="ghost"
+                  size="icon"
+                  className={`text-muted-foreground shrink-0 ${isRecording ? 'text-red-500 hover:text-red-600' : 'hover:text-primary'}`}
+                  disabled={isLoading}
+                >
+                  {isRecording ? <StopCircle /> : <Mic />}
+                </Button>
+                <Button
+                  id="sendAiMessage"
+                  className="btn-primary-gradient text-white rounded-lg w-10 h-10 p-0 mr-2 shrink-0"
+                  onClick={() => handleSendMessage()}
+                  disabled={isLoading || (!input.trim() && !uploadedMedia) || isRecording}
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+            </div>
         </div>
       </div>
     </div>
