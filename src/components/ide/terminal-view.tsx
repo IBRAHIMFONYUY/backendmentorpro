@@ -3,6 +3,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { FileSystemNode } from '@/lib/ide-data';
+import { mentorChat } from '@/ai/flows/mentor-chat';
+import { useToast } from '@/hooks/use-toast';
 
 interface TerminalViewProps {
     files: FileSystemNode;
@@ -13,6 +15,11 @@ interface TerminalViewProps {
     currentWorkingDirectory: string;
     setCurrentWorkingDirectory: (path: string) => void;
     onOpenFile: (path: string) => void;
+}
+
+type TerminalLine = {
+    type: 'output' | 'command' | 'error' | 'ai';
+    content: string;
 }
 
 const findNode = (path: string, root: FileSystemNode): FileSystemNode | null => {
@@ -35,26 +42,42 @@ const findNode = (path: string, root: FileSystemNode): FileSystemNode | null => 
 
 export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode, currentWorkingDirectory, setCurrentWorkingDirectory, onOpenFile }: TerminalViewProps) {
     const [terminalInput, setTerminalInput] = useState('');
-    const [terminalOutput, setTerminalOutput] = useState([
+    const [terminalOutput, setTerminalOutput] = useState<TerminalLine[]>([
         { type: 'output', content: 'Welcome to Backend Mentor Terminal' },
-        { type: 'output', content: "Type 'help' for available commands" },
+        { type: 'output', content: "Type 'help' for available commands, or 'rahim' to chat with the AI mentor." },
     ]);
     const [history, setHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
+    const [chatMode, setChatMode] = useState(false);
 
     const terminalRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (terminalRef.current) {
             terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
         }
     }, [terminalOutput]);
+    
+    useEffect(() => {
+        const handleCtrlC = (e: KeyboardEvent) => {
+            if (chatMode && e.ctrlKey && e.key === 'c') {
+                e.preventDefault();
+                setChatMode(false);
+                setTerminalOutput(prev => [...prev, {type: 'ai', content: '[Rahim] Chat session ended. Returning to terminal.'}]);
+                setTerminalInput('');
+            }
+        };
+
+        window.addEventListener('keydown', handleCtrlC);
+        return () => window.removeEventListener('keydown', handleCtrlC);
+    }, [chatMode]);
+
 
     const resolvePath = (cwd: string, path: string) => {
         if (path.startsWith('/')) return path;
         const newPath = new URL(path, `file://${cwd.endsWith('/') ? cwd : cwd + '/'}`).pathname;
-        // Normalize path by removing '..'
         const parts = newPath.split('/').reduce((acc, part) => {
             if (part === '..') {
                 acc.pop();
@@ -67,6 +90,8 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
     }
     
     const getPrompt = () => {
+        if (chatMode) return `<span>&gt;&nbsp;</span>`;
+
         const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory;
         return `backendmentor@penguin:<span class="text-blue-400">${path}</span>$&nbsp;`;
     }
@@ -76,7 +101,20 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
         return `backendmentor@penguin:${path}$ ${command}`;
     }
 
-    const handleTerminalCommand = (command: string) => {
+    const handleTerminalCommand = async (command: string) => {
+        if (chatMode) {
+            setTerminalOutput(prev => [...prev, {type: 'command', content: `> ${command}`}]);
+            setTerminalInput('');
+            try {
+                const result = await mentorChat({ message: command });
+                setTerminalOutput(prev => [...prev, {type: 'ai', content: `[Rahim] ${result.response}`}]);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'AI Mentor Error', description: 'Could not get response from AI.' });
+                setTerminalOutput(prev => [...prev, {type: 'error', content: `[Rahim] Sorry, I'm having trouble connecting.`}]);
+            }
+            return;
+        }
+
         setTerminalOutput(prev => [...prev, {type: 'command', content: getCommandPrompt(command)}]);
         if (command) {
             setHistory(prev => [command, ...prev]);
@@ -86,7 +124,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
         const args = command.split(' ').filter(Boolean);
         const cmd = args[0].toLowerCase();
         
-        let output: {type: string, content: string}[] = [];
+        let output: TerminalLine[] = [];
         
         const getNode = (path: string) => findNode(path, files);
 
@@ -97,7 +135,11 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
         
         switch(cmd) {
             case 'help':
-                output.push({type: 'output', content: `Available commands: ls, cd, pwd, cat, clear, test, node, echo, whoami, mkdir, touch, rm, vi, nano, cp, mv, find, grep, wc, head, tail, dir, date, uname, hostname, env, history, !`});
+                output.push({type: 'output', content: `Available commands: ls, cd, pwd, cat, clear, test, node, echo, whoami, mkdir, touch, rm, vi, nano, cp, mv, find, grep, wc, head, tail, dir, date, uname, hostname, env, history, !, rahim`});
+                break;
+            case 'rahim':
+                setChatMode(true);
+                output.push({type: 'ai', content: "[Rahim] Hello! I'm Rahim, your AI coding mentor. Ask me anything. (Press Ctrl+C to exit)"});
                 break;
             case 'clear':
                 setTerminalOutput([]);
@@ -241,7 +283,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                     const histNum = parseInt(args[1], 10);
                     if (!isNaN(histNum) && histNum > 0 && histNum <= history.length) {
                         const commandToRun = history[history.length - histNum];
-                        handleTerminalCommand(commandToRun);
+                        await handleTerminalCommand(commandToRun);
                     } else {
                          output.push({type: 'error', content: `!: event not found: ${args[1]}`});
                     }
@@ -289,7 +331,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                 }
                 break;
              case 'dir':
-                handleTerminalCommand('ls ' + args.slice(1).join(' '));
+                await handleTerminalCommand('ls ' + args.slice(1).join(' '));
                 return;
             case 'env':
                 output.push({type: 'output', content: `PWD=${currentWorkingDirectory}<br/>USER=developer<br/>SHELL=/bin/bash`});
@@ -338,8 +380,8 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
             </div>
             <div ref={terminalRef} className="flex-1 terminal p-2 font-mono text-xs overflow-y-auto">
               {terminalOutput.map((line, index) => (
-                <div key={index} className={line.type === 'command' ? 'text-gray-400' : line.type === 'error' ? 'text-red-400' : 'text-green-400'}>
-                  {line.type === 'ai' ? <span className="text-purple-400">{line.content}</span> : <span dangerouslySetInnerHTML={{ __html: line.content.replace(/ /g, '&nbsp;') }} />}
+                <div key={index} className={line.type === 'command' ? 'text-gray-400' : line.type === 'error' ? 'text-red-400' : line.type === 'ai' ? 'text-purple-400' : 'text-green-400'}>
+                   <span dangerouslySetInnerHTML={{ __html: line.content.replace(/ /g, '&nbsp;') }} />
                 </div>
               ))}
                <div className="flex">
