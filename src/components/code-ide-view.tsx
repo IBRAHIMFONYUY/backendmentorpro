@@ -45,7 +45,7 @@ function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((
     } catch (error) {
       setState(defaultValue);
     }
-  }, [key, defaultValue]);
+  }, [key]);
 
 
   const setValue = (value: T | ((prevState: T) => T)) => {
@@ -813,4 +813,3 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     </>
   );
 }
-
