@@ -65,9 +65,19 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
         }, [] as string[]);
         return '/' + parts.join('/');
     }
+    
+    const getPrompt = () => {
+        const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory;
+        return `backendmentor@penguin:<span class="text-blue-400">${path}</span>$&nbsp;`;
+    }
+    
+    const getCommandPrompt = (command: string) => {
+         const path = currentWorkingDirectory === '/' ? '~' : currentWorkingDirectory;
+        return `backendmentor@penguin:${path}$ ${command}`;
+    }
 
     const handleTerminalCommand = (command: string) => {
-        setTerminalOutput(prev => [...prev, {type: 'command', content: `${currentWorkingDirectory}$ ${command}`}]);
+        setTerminalOutput(prev => [...prev, {type: 'command', content: getCommandPrompt(command)}]);
         if (command) {
             setHistory(prev => [command, ...prev]);
         }
@@ -333,7 +343,7 @@ export function TerminalView({ files, onRunTests, addFile, addFolder, deleteNode
                 </div>
               ))}
                <div className="flex">
-                <span className="text-green-400" dangerouslySetInnerHTML={{ __html: `${currentWorkingDirectory}$&nbsp;`.replace(/ /g, '&nbsp;')}} />
+                <span className="text-green-400" dangerouslySetInnerHTML={{ __html: getPrompt() }} />
                 <input
                   ref={inputRef}
                   type="text"
