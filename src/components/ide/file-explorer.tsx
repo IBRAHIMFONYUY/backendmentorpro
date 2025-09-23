@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckCircle, File, FileJson, FileText, Folder, FolderOpen, FolderPlus, RefreshCw, XCircle, Loader2, FilePlus, ChevronsRightLeft, Rows, Columns } from 'lucide-react';
 import type { FileSystemNode, TestResult } from '@/lib/ide-data';
+import { cn } from '@/lib/utils';
 
 interface FileExplorerProps {
     files: FileSystemNode;
@@ -17,6 +18,7 @@ interface FileExplorerProps {
     onExpandAll: () => void;
     openFolders: Set<string>;
     toggleFolder: (path: string) => void;
+    selectedFolder: string;
 }
 
 export function FileExplorer({ 
@@ -30,7 +32,8 @@ export function FileExplorer({
     onCollapseAll,
     onExpandAll,
     openFolders,
-    toggleFolder
+    toggleFolder,
+    selectedFolder,
 }: FileExplorerProps) {
     const passedTests = testResults.filter(r => r.status === 'passed').length;
     const totalTests = testResults.length;
@@ -44,25 +47,29 @@ export function FileExplorer({
     }
 
     const FileTree = ({ node, level = 0 }: { node: FileSystemNode, level?: number }) => {
+        const isSelected = selectedFolder === node.path;
+        
         if (node.type === 'folder') {
           const isOpen = openFolders.has(node.path);
           return (
             <div className="text-sm">
                 <div 
-                    className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer`}
+                    className={cn(
+                        "flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer",
+                        isSelected && "bg-muted/50"
+                    )}
                     style={{ paddingLeft: `${level * 0.5}rem` }}
-                    onClick={() => toggleFolder(node.path)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onFileSelect(node.path);
+                    }}
                 >
                     {isOpen ? <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" /> : <Folder className="h-4 w-4 text-blue-400 shrink-0" />}
-                    <span className="truncate">{node.name}</span>
+                    <span className="truncate">{node.name || '/'}</span>
                 </div>
                 {isOpen && node.children && (
                     <div className="pl-2">
-                        {node.children.sort((a,b) => {
-                            if (a.type === 'folder' && b.type !== 'folder') return -1;
-                            if (a.type !== 'folder' && b.type === 'folder') return 1;
-                            return a.name.localeCompare(b.name);
-                        }).map(child => <FileTree key={child.path} node={child} level={level + 1} />)}
+                        {node.children.map(child => <FileTree key={child.path} node={child} level={level + 1} />)}
                     </div>
                 )}
             </div>
@@ -72,9 +79,15 @@ export function FileExplorer({
         // Is a file
         return (
              <div 
-                className={`flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer file-tree-item ${activeTab === node.path ? 'active' : ''}`}
+                className={cn(
+                    "flex items-center space-x-2 p-1 rounded-md hover:bg-muted cursor-pointer file-tree-item",
+                    activeTab === node.path && 'active'
+                )}
                 style={{ paddingLeft: `${level * 0.5}rem` }}
-                onClick={() => onFileSelect(node.path)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onFileSelect(node.path);
+                }}
             >
                 {getFileIcon(node.name)}
                 <span className="truncate">{node.name}</span>

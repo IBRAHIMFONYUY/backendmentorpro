@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -11,14 +11,20 @@ interface CreateFileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate: (path: string) => void;
+  basePath: string;
 }
 
-export function CreateFileModal({ isOpen, onClose, onCreate }: CreateFileModalProps) {
+export function CreateFileModal({ isOpen, onClose, onCreate, basePath }: CreateFileModalProps) {
   const [fileName, setFileName] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setFileName("");
+    }
+  }, [isOpen]);
 
   const handleCreate = () => {
     onCreate(fileName);
-    setFileName("");
   };
 
   return (
@@ -26,11 +32,11 @@ export function CreateFileModal({ isOpen, onClose, onCreate }: CreateFileModalPr
       <DialogContent className="glass-effect modal sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FilePlus /> Create New File</DialogTitle>
-          <DialogDescription>Enter the name of the new file. You can include a path (e.g., `src/components/button.js`).</DialogDescription>
+          <DialogDescription>Enter the name for the new file in <code className="bg-muted px-1 py-0.5 rounded text-foreground">{basePath}</code></DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <Input 
-            placeholder="e.g., utils/helpers.js" 
+            placeholder="e.g., helpers.js" 
             value={fileName}
             onChange={(e) => setFileName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}

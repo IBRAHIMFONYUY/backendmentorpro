@@ -59,7 +59,11 @@ const addNode = (tree: FileSystemNode, path: string, type: 'file' | 'folder'): F
         content: type === 'file' ? '' : undefined,
     };
 
-    currentNode.children = [...(currentNode.children || []), newNode];
+    currentNode.children = [...(currentNode.children || []), newNode].sort((a,b) => {
+        if (a.type === 'folder' && b.type !== 'folder') return -1;
+        if (a.type !== 'folder' && b.type === 'folder') return 1;
+        return a.name.localeCompare(b.name);
+    });
     return { ...tree };
 };
 
@@ -70,6 +74,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
   const [activeTab, setActiveTab] = useState('/server.js');
   const [testResults, setTestResults] = useState<TestResult[]>(initialTestResults);
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set(['/']));
+  const [selectedFolder, setSelectedFolder] = useState<string>('/');
   
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
@@ -139,12 +144,17 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
 
   const handleFileSelect = (path: string) => {
     const node = findNode(path, files);
-    if(node?.type !== 'file') return;
+    if (!node) return;
 
-    if (!openTabs.includes(path)) {
-      setOpenTabs(prev => [...prev, path]);
+    if (node.type === 'file') {
+      if (!openTabs.includes(path)) {
+        setOpenTabs(prev => [...prev, path]);
+      }
+      setActiveTab(path);
+    } else if (node.type === 'folder') {
+      setSelectedFolder(path);
+      toggleFolder(path);
     }
-    setActiveTab(path);
   }
 
   const handleCloseTab = (path: string, e: React.MouseEvent) => {
@@ -199,22 +209,24 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
     toast({ title: "Settings Updated", description: "Your changes have been applied." });
   };
   
-  const handleCreateFile = (path: string) => {
-      if (!path || !path.includes('.')) {
+  const handleCreateFile = (name: string) => {
+      if (!name || !name.includes('.')) {
           toast({ variant: 'destructive', title: 'Invalid File Name', description: 'Please provide a valid file name with an extension.'});
           return;
       }
+      const path = (selectedFolder === '/' ? '' : selectedFolder) + '/' + name;
       setFiles(prevFiles => addNode(prevFiles, path, 'file'));
       handleFileSelect(path);
       toast({ title: "File created!", description: `File "${path}" was created successfully.` });
       setCreateFileModalOpen(false);
   }
 
-  const handleCreateFolder = (path: string) => {
-       if (!path || path.includes('.')) {
+  const handleCreateFolder = (name: string) => {
+       if (!name || name.includes('.')) {
           toast({ variant: 'destructive', title: 'Invalid Folder Name', description: 'Please provide a valid folder name.'});
           return;
       }
+      const path = (selectedFolder === '/' ? '' : selectedFolder) + '/' + name;
       setFiles(prevFiles => addNode(prevFiles, path, 'folder'));
       toast({ title: "Folder created!", description: `Folder "${path}" was created successfully.` });
       setCreateFolderModalOpen(false);
@@ -266,8 +278,8 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
         onSettingsChange={onSettingsChange}
       />
       <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} onCommand={executeCommand} />
-      <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} />
-      <CreateFolderModal isOpen={createFolderModalOpen} onClose={() => setCreateFolderModalOpen(false)} onCreate={handleCreateFolder} />
+      <CreateFileModal isOpen={createFileModalOpen} onClose={() => setCreateFileModalOpen(false)} onCreate={handleCreateFile} basePath={selectedFolder} />
+      <CreateFolderModal isOpen={createFolderModalOpen} onClose={() => setCreateFolderModalOpen(false)} onCreate={handleCreateFolder} basePath={selectedFolder} />
 
 
       <div className="h-screen w-screen flex flex-col bg-background ide-body">
@@ -305,6 +317,7 @@ export function CodeIdeView({ challenge }: { challenge: Challenge }) {
                       onExpandAll={handleExpandAll}
                       openFolders={openFolders}
                       toggleFolder={toggleFolder}
+                      selectedFolder={selectedFolder}
                   />
               </ResizablePanel>
               <ResizableHandle withHandle className="hidden md:flex"/>

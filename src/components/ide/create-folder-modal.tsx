@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -11,14 +11,20 @@ interface CreateFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate: (path: string) => void;
+  basePath: string;
 }
 
-export function CreateFolderModal({ isOpen, onClose, onCreate }: CreateFolderModalProps) {
+export function CreateFolderModal({ isOpen, onClose, onCreate, basePath }: CreateFolderModalProps) {
   const [folderName, setFolderName] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setFolderName("");
+    }
+  }, [isOpen]);
 
   const handleCreate = () => {
     onCreate(folderName);
-    setFolderName("");
   };
 
   return (
@@ -26,7 +32,7 @@ export function CreateFolderModal({ isOpen, onClose, onCreate }: CreateFolderMod
       <DialogContent className="glass-effect modal sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FolderPlus /> Create New Folder</DialogTitle>
-          <DialogDescription>Enter the name of the new folder. You can create nested folders (e.g., `src/components`).</DialogDescription>
+          <DialogDescription>Enter the name for the new folder in <code className="bg-muted px-1 py-0.5 rounded text-foreground">{basePath}</code></DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <Input 
