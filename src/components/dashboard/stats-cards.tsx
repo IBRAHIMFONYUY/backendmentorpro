@@ -4,7 +4,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Trophy, Code, Clock, Users, ArrowUp } from "lucide-react"
+import { Trophy, Code, Clock, Users, ArrowUp, Star } from "lucide-react"
 
 export function StatsCards() {
   return (
