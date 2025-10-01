@@ -12,21 +12,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUpRight, Crown, Bot, Check, Clock, Code, ExternalLink, Flame, Star, Trophy, Users, CheckCircle, BrainCircuit } from "lucide-react";
+import { ArrowUpRight, Crown, Bot, BrainCircuit, CheckCircle, Code, ExternalLink, Flame, Trophy } from "lucide-react";
 import Image from "next/image";
 import { AiAssistantModal } from "@/components/ai-assistant-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Overview } from "@/components/dashboard/overview";
 import { AiAnalyticsSummary } from "@/components/dashboard/ai-analytics-summary";
+import { LearningPath } from "@/components/dashboard/learning-path";
+import type { GeneratePersonalizedLearningPathOutput } from "@/ai/flows/generate-personalized-learning-path";
 
 export default function DashboardPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [continueModalOpen, setContinueModalOpen] = useState(false);
   const [achievementsModalOpen, setAchievementsModalOpen] = useState(false);
+  const [learningPath, setLearningPath] = useState<GeneratePersonalizedLearningPathOutput | null>(null);
 
   const { toast } = useToast();
 
@@ -35,6 +36,15 @@ export default function DashboardPage() {
     if (!localStorage.getItem("hasSeenWelcomeAssistant")) {
       setShowWelcome(true);
       localStorage.setItem("hasSeenWelcomeAssistant", "true");
+    }
+
+    const storedPath = localStorage.getItem("learningPath");
+    if (storedPath) {
+      try {
+        setLearningPath(JSON.parse(storedPath));
+      } catch (error) {
+        console.error("Failed to parse learning path from localStorage", error);
+      }
     }
   }, []);
 
@@ -151,65 +161,16 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <StatsCards />
+            {learningPath ? <LearningPath path={learningPath} /> : <StatsCards />}
+
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <div className="grid md:grid-cols-2 gap-8">
-                      <AiAnalyticsSummary />
-                      <Overview />
-                    </div>
-
                     <RecentChallenges />
                 </div>
 
                 <div className="space-y-8">
-                    <Card className="glass-effect animate-slide-in-right card-hover">
-                      <CardHeader>
-                        <CardTitle className="text-xl">Recent Activity</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                            <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50">
-                                <div className="w-8 h-8 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center">
-                                    <CheckCircle className="h-4 w-4" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium">Completed "API Security"</p>
-                                    <p className="text-sm text-muted-foreground">+50 XP • 2 hours ago</p>
-                                </div>
-                            </div>
-                            
-                             <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50">
-                                <div className="w-8 h-8 bg-primary/20 text-primary rounded-full flex items-center justify-center">
-                                    <Trophy className="h-4 w-4" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium">Earned "API Master" badge</p>
-                                    <p className="text-sm text-muted-foreground">Achievement unlocked • 1 day ago</p>
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50">
-                                <div className="w-8 h-8 bg-secondary/20 text-secondary rounded-full flex items-center justify-center">
-                                    <Code className="h-4 w-4" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium">Started "Microservices"</p>
-                                    <p className="text-sm text-muted-foreground">New challenge • 2 days ago</p>
-                                </div>
-                            </div>
-                            
-                             <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50">
-                                <div className="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
-                                    <Flame className="h-4 w-4" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-medium">7-day coding streak!</p>
-                                    <p className="text-sm text-muted-foreground">Keep it up! • 3 days ago</p>
-                                </div>
-                            </div>
-                      </CardContent>
-                    </Card>
+                    <AiAnalyticsSummary />
 
                      <Card className="glass-effect animate-slide-in-right card-hover" onClick={() => setAchievementsModalOpen(true)}>
                         <CardHeader>

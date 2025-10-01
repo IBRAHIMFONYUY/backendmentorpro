@@ -4,14 +4,28 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { FaDiscord, FaGithub, FaGoogle, FaNodeJs, FaPython, FaJava, FaAws, FaPhp, FaDocker, FaYoutube, FaTwitter } from 'react-icons/fa';
-import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt, X } from 'lucide-react';
+import { Rocket, Compass, Play, Save, Share, Bot, Terminal, CheckCircle, Trophy, Users, Network, Download, ChartLine, Send, Trash, Bug, Search, Lightbulb, Code, Server, LayerGroup, Cog, Hashtag, Video, Book, Star, Bolt, X, Loader2, BrainCircuit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AiAssistantModal } from '@/components/ai-assistant-modal';
+import { generatePersonalizedLearningPath, GeneratePersonalizedLearningPathOutput } from '@/ai/flows/generate-personalized-learning-path';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+type OnboardingStep = 'auth' | 'level' | 'goals' | 'generating' | 'complete';
+const GOAL_OPTIONS = [
+  'Build Scalable Backend Systems',
+  'Master System Design Interviews',
+  'Transition to a Backend Role',
+  'Learn a new Framework (e.g., NestJS)',
+  'Improve Database Knowledge (SQL/NoSQL)',
+  'Understand DevOps & CI/CD',
+];
 
 export default function Home() {
     const { toast } = useToast();
     const [authModalOpen, setAuthModalOpen] = useState(false);
-    const [onboardingStep, setOnboardingStep] = useState(false);
+    const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('auth');
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [apiMethod, setApiMethod] = useState('GET');
     const [requestBodyVisible, setRequestBodyVisible] = useState(false);
@@ -19,6 +33,11 @@ export default function Home() {
     const [apiRequestBody, setApiRequestBody] = useState('{"title": "Test Post", "body": "This is a test", "userId": 1}');
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [isApiLoading, setIsApiLoading] = useState(false);
+    
+    // Onboarding state
+    const [skillLevel, setSkillLevel] = useState('Beginner');
+    const [learningGoals, setLearningGoals] = useState<string[]>([]);
+    const [customGoal, setCustomGoal] = useState('');
 
 
     // Smooth scrolling for anchor links
@@ -67,7 +86,7 @@ export default function Home() {
     }, [toast]);
     
     const handleAuthModalOpen = () => {
-        setOnboardingStep(false);
+        setOnboardingStep('auth');
         setAuthModalOpen(true);
     };
 
@@ -75,7 +94,7 @@ export default function Home() {
         toast({ title: <div className="flex items-center gap-2">{provider === 'GitHub' ? <FaGithub/> : <FaGoogle/>} Redirecting to {provider} OAuth...</div> });
         setTimeout(() => {
             toast({ title: <div className="flex items-center gap-2"><CheckCircle/>{provider} authentication successful!</div> });
-            setOnboardingStep(true);
+            setOnboardingStep('level');
         }, 2000);
     };
 
@@ -83,10 +102,37 @@ export default function Home() {
         toast({ title: <div className="flex items-center gap-2"><Users/>Creating your account...</div> });
         setTimeout(() => {
             toast({ title: <div className="flex items-center gap-2"><CheckCircle/>Account created successfully!</div> });
-            setOnboardingStep(true);
+            setOnboardingStep('level');
         }, 1500);
     };
 
+    const handleGenerateLearningPath = async () => {
+        setOnboardingStep('generating');
+        const finalGoals = [...learningGoals];
+        if (customGoal) {
+          finalGoals.push(customGoal);
+        }
+
+        if (finalGoals.length === 0) {
+          toast({ variant: 'destructive', title: 'Please select at least one learning goal.' });
+          setOnboardingStep('goals');
+          return;
+        }
+
+        try {
+            const path = await generatePersonalizedLearningPath({
+                currentSkillLevel: skillLevel,
+                learningGoals: finalGoals,
+            });
+            localStorage.setItem('learningPath', JSON.stringify(path));
+            setOnboardingStep('complete');
+        } catch (e) {
+            console.error(e);
+            toast({ variant: 'destructive', title: 'Failed to generate learning path. Please try again.' });
+            setOnboardingStep('goals');
+        }
+    };
+    
     const handleCompleteOnboarding = () => {
         toast({ title: <div className="flex items-center gap-2"><Rocket/>Welcome! Starting your journey.</div> });
         setAuthModalOpen(false);
@@ -163,6 +209,12 @@ export default function Home() {
         setApiRequestBody('{"title": "Test Post", "body": "This is a test", "userId": 1}');
         setApiResponse(null);
         toast({ title: <div className="flex items-center gap-2"><Trash/>Cleared API playground</div> });
+    }
+
+    const handleGoalToggle = (goal: string) => {
+      setLearningGoals(prev => 
+        prev.includes(goal) ? prev.filter(g => g !== goal) : [...prev, goal]
+      );
     }
 
   return (
@@ -647,12 +699,13 @@ export default function Home() {
         {/* Auth Modal */}
         {authModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-                <div className="glass-effect rounded-2xl p-8 max-w-md w-full relative">
+                <div className="glass-effect rounded-2xl p-8 max-w-lg w-full relative">
                     <Button onClick={() => setAuthModalOpen(false)} variant="ghost" size="icon" className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
                         <X />
                     </Button>
-                    {!onboardingStep ? (
-                        <div id="authStep1" className="space-y-6">
+                    
+                    {onboardingStep === 'auth' && (
+                        <div className="space-y-6">
                             <h2 className="text-3xl font-bold gradient-text text-center">Join BackendMentorAI</h2>
                             <div className="space-y-4">
                                 <Button onClick={() => handleOAuth('GitHub')} className="w-full bg-gray-800 hover:bg-gray-700 text-white py-6 text-base"><FaGithub className="mr-2" /> Continue with GitHub</Button>
@@ -664,11 +717,53 @@ export default function Home() {
                                 <Button onClick={handleEmailSignup} className="w-full py-6 btn-primary-gradient">Create Account</Button>
                             </div>
                         </div>
-                    ) : (
-                         <div id="onboardingStep" className="space-y-6">
-                            <h3 className="text-2xl font-bold text-center">Customize Your Experience</h3>
-                             {/* Simplified onboarding for brevity */}
-                            <Button onClick={handleCompleteOnboarding} className="w-full py-6 bg-gradient-to-r from-primary to-accent">🚀 Start My Journey</Button>
+                    )}
+
+                    {onboardingStep === 'level' && (
+                         <div className="space-y-6">
+                            <h3 className="text-2xl font-bold text-center">What is your current skill level?</h3>
+                             <RadioGroup defaultValue={skillLevel} onValueChange={setSkillLevel} className="grid grid-cols-3 gap-4">
+                                <div><RadioGroupItem value="Beginner" id="level-beginner" className="sr-only" /><Label htmlFor="level-beginner" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"><Trophy className="mb-3 h-6 w-6" />Beginner</Label></div>
+                                <div><RadioGroupItem value="Intermediate" id="level-intermediate" className="sr-only" /><Label htmlFor="level-intermediate" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"><Star className="mb-3 h-6 w-6" />Intermediate</Label></div>
+                                <div><RadioGroupItem value="Advanced" id="level-advanced" className="sr-only" /><Label htmlFor="level-advanced" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"><Rocket className="mb-3 h-6 w-6" />Advanced</Label></div>
+                            </RadioGroup>
+                            <Button onClick={() => setOnboardingStep('goals')} className="w-full py-3 btn-primary-gradient">Next</Button>
+                        </div>
+                    )}
+
+                    {onboardingStep === 'goals' && (
+                        <div className="space-y-6">
+                            <h3 className="text-2xl font-bold text-center">What are your learning goals?</h3>
+                            <p className="text-center text-muted-foreground">Select one or more, or add your own.</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {GOAL_OPTIONS.map(goal => (
+                                <Button key={goal} variant={learningGoals.includes(goal) ? "default" : "outline"} onClick={() => handleGoalToggle(goal)} className="justify-start text-left h-auto py-3">
+                                  {goal}
+                                </Button>
+                              ))}
+                            </div>
+                            <Textarea placeholder="Anything else? (e.g., prepare for a FAANG interview)" value={customGoal} onChange={e => setCustomGoal(e.target.value)} />
+                            <div className="flex justify-between">
+                              <Button variant="ghost" onClick={() => setOnboardingStep('level')}>Back</Button>
+                              <Button onClick={handleGenerateLearningPath} className="py-3 btn-primary-gradient">Generate My Learning Path</Button>
+                            </div>
+                        </div>
+                    )}
+
+                     {onboardingStep === 'generating' && (
+                         <div className="space-y-6 text-center flex flex-col items-center justify-center h-48">
+                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                            <h3 className="text-2xl font-bold">Generating Your Personalized Path...</h3>
+                            <p className="text-muted-foreground">Rahim is crafting the perfect curriculum for you.</p>
+                        </div>
+                    )}
+                    
+                    {onboardingStep === 'complete' && (
+                         <div className="space-y-6 text-center">
+                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+                            <h3 className="text-2xl font-bold">Your Path is Ready!</h3>
+                            <p className="text-muted-foreground">Your personalized learning journey has been created and is waiting for you on your dashboard.</p>
+                            <Button onClick={handleCompleteOnboarding} className="w-full py-3 btn-primary-gradient">Let's Get Started!</Button>
                         </div>
                     )}
                 </div>
