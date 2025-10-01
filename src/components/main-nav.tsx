@@ -12,6 +12,7 @@ import {
   User,
   Settings,
   HelpCircle,
+  Film,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +23,7 @@ import { ScrollArea } from "./ui/scroll-area";
 const mainNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/challenges", icon: Code, label: "Challenges" },
+  { href: "/video-lab", icon: Film, label: "Video Lab"},
   { href: "/playground", icon: BrainCircuit, label: "Code Editor" },
 ];
 
