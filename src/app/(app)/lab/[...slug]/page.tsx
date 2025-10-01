@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -29,7 +30,13 @@ const Notes = ({ notes }: { notes: string }) => (
                     h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 gradient-text" {...props} />,
                     h2: ({node, ...props}) => <h2 className="text-xl font-semibold mb-3 border-b border-border pb-2" {...props} />,
                     h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2" {...props} />,
-                    p: ({node, ...props}) => <p className="leading-relaxed mb-4" {...props} />,
+                    p: ({node, ...props}) => {
+                         // Check if the paragraph contains non-phrasing content (like a div or pre)
+                        if (node?.children.some(child => child.type === 'element' && (child.tagName === 'pre' || child.tagName === 'div'))) {
+                            return <>{props.children}</>;
+                        }
+                        return <p className="leading-relaxed mb-4" {...props} />;
+                    },
                     ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 space-y-2" {...props} />,
                     ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 space-y-2" {...props} />,
                     li: ({node, ...props}) => <li className="mb-2" {...props} />,
