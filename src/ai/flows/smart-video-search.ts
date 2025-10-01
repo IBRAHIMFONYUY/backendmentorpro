@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,7 +11,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { videos } from '@/lib/video-data';
 
 const SmartVideoSearchInputSchema = z.object({
   query: z.string().describe('The user\'s natural language search query for a video.'),
@@ -31,28 +31,57 @@ const SmartVideoSearchOutputSchema = z.object({
 });
 export type SmartVideoSearchOutput = z.infer<typeof SmartVideoSearchOutputSchema>;
 
-// This is a tool that simulates calling the YouTube API
+// This tool calls the live YouTube Data API
 const searchYouTube = ai.defineTool(
   {
     name: 'searchYouTube',
-    description: 'Searches for educational programming videos. Returns videos relevant to the query.',
+    description: 'Searches YouTube for educational programming and software development videos. Returns a list of videos relevant to the user\'s query.',
     inputSchema: z.object({
-      query: z.string().describe('The search query for videos.'),
+      query: z.string().describe('A targeted, keyword-rich search query for videos.'),
     }),
     outputSchema: z.object({
         videos: z.array(VideoSchema)
     })
   },
   async ({ query }) => {
-    // In a real app, this would call the YouTube API.
-    // For this prototype, we'll filter our local data.
-    const lowerCaseQuery = query.toLowerCase();
-    const results = videos.filter(video => 
-        video.title.toLowerCase().includes(lowerCaseQuery) ||
-        video.description.toLowerCase().includes(lowerCaseQuery) ||
-        video.channel.toLowerCase().includes(lowerCaseQuery)
-    );
-    return { videos: results.slice(0, 10) }; // Return top 10 results
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      console.error("YOUTUBE_API_KEY is not set in the environment.");
+      throw new Error("Server configuration error: YouTube API key is missing.");
+    }
+    
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.searchParams.append('part', 'snippet');
+    url.searchParams.append('q', `software development ${query}`); // Focus search on relevant topics
+    url.searchParams.append('type', 'video');
+    url.searchParams.append('maxResults', '12');
+    url.searchParams.append('key', apiKey);
+
+    try {
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("YouTube API Error:", errorData);
+        throw new Error(`YouTube API request failed with status ${response.status}`);
+      }
+      const data = await response.json();
+      
+      const videos: z.infer<typeof VideoSchema>[] = data.items.map((item: any) => ({
+        id: item.id.videoId,
+        youtubeId: item.id.videoId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        channel: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+      }));
+
+      return { videos };
+
+    } catch (error) {
+      console.error('Failed to fetch from YouTube API:', error);
+      // Return an empty array on error to prevent total failure
+      return { videos: [] };
+    }
   }
 );
 
@@ -61,9 +90,10 @@ export async function smartVideoSearch(
   input: SmartVideoSearchInput
 ): Promise<SmartVideoSearchOutput> {
   const llmResponse = await ai.generate({
-    prompt: `You are a helpful assistant that helps users find educational videos. Your goal is to understand the user's query and use the available tool to find the most relevant videos.
+    prompt: `You are a helpful assistant that helps users find educational videos about software development. Your goal is to rephrase the user's query into a concise, keyword-focused search query for the YouTube API. For example, if a user asks "show me videos on how to build a REST API in Node.js", a good query would be "Node.js REST API tutorial".
       User query: ${input.query}`,
     tools: [searchYouTube],
+    model: 'googleai/gemini-2.5-flash',
   });
 
   const toolResponse = llmResponse.toolRequest?.output;
@@ -73,5 +103,6 @@ export async function smartVideoSearch(
   }
   
   // Fallback if the tool doesn't respond as expected
+  console.warn("AI did not use the search tool. Returning empty results.");
   return { videos: [] };
 }
