@@ -282,3 +282,10 @@ body {
   border: 1px solid rgba(59, 130, 246, 0.3);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
+
+.bg-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.4) 1px, transparent 1px);
+  background-size: 2rem 2rem;
+}

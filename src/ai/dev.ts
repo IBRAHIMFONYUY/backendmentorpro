@@ -14,3 +14,4 @@ import '@/ai/flows/speech-to-text.ts';
 import '@/ai/flows/generate-lab-content.ts';
 import '@/ai/flows/summarize-video-content.ts';
 import '@/ai/flows/smart-video-search.ts';
+import '@/ai/flows/analyze-system-design.ts';

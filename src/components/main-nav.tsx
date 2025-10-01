@@ -13,6 +13,7 @@ import {
   Settings,
   HelpCircle,
   Film,
+  Waypoints,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +25,7 @@ const mainNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/challenges", icon: Code, label: "Challenges" },
   { href: "/video-lab", icon: Film, label: "Video Lab"},
+  { href: "/system-design", icon: Waypoints, label: "System Design" },
   { href: "/playground", icon: BrainCircuit, label: "Code Editor" },
 ];
 
