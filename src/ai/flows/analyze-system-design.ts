@@ -62,7 +62,7 @@ Your instructions:
     - Use 'suggestion' for potential improvements (e.g., "Consider adding a cache between the server and database to reduce read load.").
     - Use 'warning' for critical issues (e.g., "The web servers have no connection to a database, so they cannot store or retrieve data.").
     - Keep feedback concise, friendly, and educational. Act like a mentor guiding a student.
-    - If a piece of feedback relates to specific components, include their IDs.
+    - If a piece of feedback relates to specific components, you MUST include their IDs in the 'componentIds' field.
 
 Analyze the design and provide your feedback.
 `,

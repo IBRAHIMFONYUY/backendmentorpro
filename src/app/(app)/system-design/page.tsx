@@ -51,6 +51,7 @@ export default function SystemDesignPage() {
   
   const [dragState, setDragState] = useState<DragState>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [highlightedComponentIds, setHighlightedComponentIds] = useState<Set<string>>(new Set());
 
 
   const getAIAnalysis = useCallback(
@@ -125,16 +126,6 @@ export default function SystemDesignPage() {
     setDragState(null);
   };
   
-  const highlightedComponentIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (analysis?.feedback) {
-      for (const item of analysis.feedback) {
-        item.componentIds?.forEach(id => ids.add(id));
-      }
-    }
-    return ids;
-  }, [analysis]);
-
   return (
     <div className="h-full flex flex-col p-4 md:p-8 gap-8">
       <header>
@@ -234,7 +225,12 @@ export default function SystemDesignPage() {
             </div>
             <div className="space-y-3">
               {analysis?.feedback.map((item, index) => (
-                <FeedbackCard key={index} item={item} />
+                <FeedbackCard 
+                    key={index} 
+                    item={item} 
+                    onMouseEnter={() => setHighlightedComponentIds(new Set(item.componentIds || []))}
+                    onMouseLeave={() => setHighlightedComponentIds(new Set())}
+                />
               ))}
             </div>
           </CardContent>
@@ -245,7 +241,7 @@ export default function SystemDesignPage() {
 }
 
 // Sub-components
-const FeedbackCard = ({ item }: { item: Feedback }) => {
+const FeedbackCard = ({ item, onMouseEnter, onMouseLeave }: { item: Feedback, onMouseEnter: () => void, onMouseLeave: () => void }) => {
   const getIcon = () => {
     switch (item.type) {
       case 'praise': return <CheckCircle className="text-green-500" />;
@@ -256,7 +252,11 @@ const FeedbackCard = ({ item }: { item: Feedback }) => {
   };
 
   return (
-    <div className="flex items-start gap-3 text-sm p-3 bg-background/30 rounded-lg">
+    <div 
+        className="flex items-start gap-3 text-sm p-3 bg-background/30 rounded-lg transition-all duration-200 hover:bg-background/60"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+    >
       <div className="mt-0.5 shrink-0">{getIcon()}</div>
       <p className="text-muted-foreground">{item.message}</p>
     </div>
