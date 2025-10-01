@@ -72,5 +72,69 @@ export const videos: Video[] = [
         channel: 'Fireship',
         youtubeId: 'PeAOE721fF8',
         thumbnailUrl: 'https://picsum.photos/seed/video8/480/270'
+    },
+    {
+        id: '9',
+        title: 'Python Django Tutorial for Beginners',
+        description: 'Learn the fundamentals of the Django framework by building a complete web application from scratch. This course covers models, views, templates, and the admin panel.',
+        channel: 'Programming with Mosh',
+        youtubeId: 'UmljXZIypDc',
+        thumbnailUrl: 'https://picsum.photos/seed/video9/480/270'
+    },
+    {
+        id: '10',
+        title: 'Ruby on Rails Full Course',
+        description: 'A comprehensive guide to Ruby on Rails. Learn how to build a production-ready web application with one of the most popular and productive web frameworks.',
+        channel: 'freeCodeCamp.org',
+        youtubeId: 'fmyvWz5TUWg',
+        thumbnailUrl: 'https://picsum.photos/seed/video10/480/270'
+    },
+    {
+        id: '11',
+        title: 'Java Spring Boot Tutorial for Beginners',
+        description: 'Get started with Spring Boot, the most popular framework for building microservices and web applications in the Java ecosystem.',
+        channel: 'Amigoscode',
+        youtubeId: '9SGDpanrc8U',
+        thumbnailUrl: 'https://picsum.photos/seed/video11/480/270'
+    },
+    {
+        id: '12',
+        title: 'PHP Laravel for Beginners - Full Course',
+        description: 'Learn Laravel from the ground up. This course will take you from a complete beginner to a confident Laravel developer, ready to build robust web applications.',
+        channel: 'freeCodeCamp.org',
+        youtubeId: 'ImtZ5ucx5r0',
+        thumbnailUrl: 'https://picsum.photos/seed/video12/480/270'
+    },
+    {
+        id: '13',
+        title: 'NestJS Crash Course',
+        description: 'A beginner-friendly introduction to NestJS, a progressive Node.js framework for building efficient, reliable and scalable server-side applications.',
+        channel: 'Traversy Media',
+        youtubeId: 'GHTA143_b-s',
+        thumbnailUrl: 'https://picsum.photos/seed/video13/480/270'
+    },
+    {
+        id: '14',
+        title: 'Go (Golang) Tutorial for Beginners',
+        description: 'Learn the Go programming language from a Google engineer. This course is perfect for beginners and covers all the essential concepts of Go.',
+        channel: 'freeCodeCamp.org',
+        youtubeId: 'YS4e4q9oEdb',
+        thumbnailUrl: 'https://picsum.photos/seed/video14/480/270'
+    },
+    {
+        id: '15',
+        title: 'Python Flask Tutorial: Full-Featured Web App',
+        description: 'Learn how to build a complete web application with Python and the Flask micro-framework. This series covers everything from basic routes to user authentication and database integration.',
+        channel: 'Corey Schafer',
+        youtubeId: 'MwZwr5Tvyxo',
+        thumbnailUrl: 'https://picsum.photos/seed/video15/480/270'
+    },
+    {
+        id: '16',
+        title: 'C# ASP.NET Core Tutorial',
+        description: 'Build a web API with C# and ASP.NET Core. This tutorial is designed for beginners and covers the fundamentals of creating a modern backend service.',
+        channel: 'Patrick God',
+        youtubeId: 'C5_1JbE22eY',
+        thumbnailUrl: 'https://picsum.photos/seed/video16/480/270'
     }
 ];
