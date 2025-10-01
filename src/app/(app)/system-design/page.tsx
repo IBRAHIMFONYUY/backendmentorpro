@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { produce } from 'immer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { analyzeSystemDesign, type AnalyzeSystemDesignOutput } from '@/ai/flows/analyze-system-design';
-import { Server, Database, ToyBrick, Waypoints, Info, AlertTriangle, Lightbulb, CheckCircle, Bot, Loader2, Wand2 } from 'lucide-react';
+import { Server, Database, ToyBrick, Waypoints, Info, AlertTriangle, Lightbulb, CheckCircle, Bot, Loader2, Wand2, MousePointer2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { debounce } from 'lodash';
@@ -23,6 +23,12 @@ type SystemComponent = {
   position: { x: number; y: number };
 };
 type Feedback = AnalyzeSystemDesignOutput['feedback'][0];
+
+type DragState = {
+  componentId: string;
+  offsetX: number;
+  offsetY: number;
+} | null;
 
 // Component Data
 const TOOLBOX_ITEMS: { type: ComponentType; icon: React.ReactNode }[] = [
@@ -42,6 +48,10 @@ export default function SystemDesignPage() {
   const [analysis, setAnalysis] = useState<AnalyzeSystemDesignOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  
+  const [dragState, setDragState] = useState<DragState>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
 
   const getAIAnalysis = useCallback(
     debounce(async (currentComponents: SystemComponent[], currentDescription: string) => {
@@ -79,6 +89,40 @@ export default function SystemDesignPage() {
       position: { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 },
     };
     setComponents(prev => [...prev, newComponent]);
+  };
+  
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, componentId: string) => {
+    const component = components.find(c => c.id === componentId);
+    if (!component || !canvasRef.current) return;
+    
+    e.stopPropagation();
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const offsetX = e.clientX - canvasRect.left - component.position.x;
+    const offsetY = e.clientY - canvasRect.top - component.position.y;
+
+    setDragState({ componentId, offsetX, offsetY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragState || !canvasRef.current) return;
+    
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const newX = e.clientX - canvasRect.left - dragState.offsetX;
+    const newY = e.clientY - canvasRect.top - dragState.offsetY;
+
+    setComponents(prev => 
+      produce(prev, draft => {
+        const component = draft.find(c => c.id === dragState.componentId);
+        if (component) {
+          component.position.x = Math.max(0, Math.min(newX, canvasRect.width - 150)); // prevent going off-screen
+          component.position.y = Math.max(0, Math.min(newY, canvasRect.height - 50));
+        }
+      })
+    );
+  };
+
+  const handleMouseUp = () => {
+    setDragState(null);
   };
   
   const highlightedComponentIds = useMemo(() => {
@@ -141,17 +185,25 @@ export default function SystemDesignPage() {
         <Card className="lg:col-span-2 glass-effect flex flex-col relative overflow-hidden">
           <CardHeader>
             <CardTitle>Design Canvas</CardTitle>
-            <CardDescription>
-              Add components from the toolbox. (Drag & drop and connections coming soon!)
+            <CardDescription className="flex items-center gap-2">
+              <MousePointer2 className="h-4 w-4" /> Drag components to arrange your architecture.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 bg-grid p-4 relative">
+          <CardContent
+            ref={canvasRef}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className="flex-1 bg-grid p-4 relative"
+          >
             {components.map(comp => (
               <div
                 key={comp.id}
+                onMouseDown={(e) => handleMouseDown(e, comp.id)}
                 className={cn(
-                  'absolute p-2 rounded-lg glass-effect border-2 flex items-center gap-2 cursor-grab transition-all duration-300',
-                  highlightedComponentIds.has(comp.id) ? 'border-primary shadow-lg shadow-primary/30' : 'border-border'
+                  'absolute p-2 rounded-lg glass-effect border-2 flex items-center gap-2 transition-all duration-300',
+                  dragState?.componentId === comp.id ? 'cursor-grabbing border-primary shadow-lg shadow-primary/30' : 'cursor-grab',
+                  highlightedComponentIds.has(comp.id) && dragState?.componentId !== comp.id ? 'border-primary shadow-lg shadow-primary/30' : 'border-border'
                 )}
                 style={{ left: `${comp.position.x}px`, top: `${comp.position.y}px` }}
               >
