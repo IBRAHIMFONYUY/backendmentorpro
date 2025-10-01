@@ -90,7 +90,8 @@ export async function smartVideoSearch(
   input: SmartVideoSearchInput
 ): Promise<SmartVideoSearchOutput> {
   const llmResponse = await ai.generate({
-    prompt: `You are a helpful assistant that helps users find educational videos about software development. Your goal is to rephrase the user's query into a concise, keyword-focused search query for the YouTube API. For example, if a user asks "show me videos on how to build a REST API in Node.js", a good query would be "Node.js REST API tutorial".
+    prompt: `You are a helpful assistant that helps users find educational videos about software development. Your goal is to rephrase the user's query into a concise, keyword-focused search query and then use the searchYouTube tool to find the videos.
+
       User query: ${input.query}`,
     tools: [searchYouTube],
     model: 'googleai/gemini-2.5-flash',
