@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -5,6 +6,7 @@ import { produce } from 'immer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { analyzeSystemDesign, type AnalyzeSystemDesignOutput } from '@/ai/flows/analyze-system-design';
 import { Server, Database, ToyBrick, Waypoints, Info, AlertTriangle, Lightbulb, CheckCircle, Bot, Loader2, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
