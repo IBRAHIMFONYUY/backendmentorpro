@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BookOpen, BrainCircuit, CheckCircle, Code, Film, FileText, Lightbulb, ListTodo, Projector, Rocket } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 interface LearningPathProps {
@@ -81,6 +82,7 @@ export function LearningPath({ path }: LearningPathProps) {
                                     {module.steps.map((step, stepIndex) => {
                                         const stepId = `${moduleIndex}-${stepIndex}`;
                                         const isCompleted = completedSteps.has(stepId);
+                                        const labUrl = `/lab/${encodeURIComponent(step.title.toLowerCase().replace(/ /g, '-'))}/${step.type}`;
                                         return (
                                             <div key={stepId} className="flex items-start gap-4 p-3 rounded-lg bg-background/50">
                                                 <Checkbox 
@@ -103,8 +105,8 @@ export function LearningPath({ path }: LearningPathProps) {
                                                         <Badge variant="outline" className="flex items-center gap-1">
                                                             {getStepIcon(step.type)} {step.type}
                                                         </Badge>
-                                                         <Button variant="link" size="sm" className="p-0 h-auto">
-                                                            Start Now <Rocket className="ml-2 h-3 w-3" />
+                                                         <Button asChild variant="link" size="sm" className="p-0 h-auto">
+                                                            <Link href={labUrl}>Start Now <Rocket className="ml-2 h-3 w-3" /></Link>
                                                         </Button>
                                                      </div>
                                                 </div>

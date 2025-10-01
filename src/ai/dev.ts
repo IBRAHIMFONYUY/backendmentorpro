@@ -11,3 +11,4 @@ import '@/ai/flows/review-challenge-submission.ts';
 import '@/ai/flows/generate-project-ideas.ts';
 import '@/ai/flows/tech-advisor.ts';
 import '@/ai/flows/speech-to-text.ts';
+import '@/ai/flows/generate-lab-content.ts';
